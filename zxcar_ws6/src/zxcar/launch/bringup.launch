@@ -1,0 +1,23 @@
+<launch>
+    <!-- 启动去动程序 -->
+    <include file="$(find zxcar_driver)/launch/zxcar_driver.launch"/>
+
+    <!-- 启动里程计节点 -->
+    <node pkg="zxcar" type="itheima_odom.py" name="itheima_odom" output="screen" />
+
+    <!-- 启动imu_calib 解决传感器静态误差 -->
+    <include file="$(find zxcar)/launch/include/imu_calib.launch"/>
+
+
+    <!-- 启动imu_filter_madgwick 传感器数据滤波融合 -->
+    <include file="$(find zxcar)/launch/include/imu_filter_madgwick.launch"/>
+
+    <!-- 启动机器人定位相关的包 卡尔曼滤波算法 估算机器人当前的位置和姿态 -->
+    <include file="$(find zxcar)/launch/include/robot_localization.launch"/>
+
+    <!-- tf树 -->
+    <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_imu_link" args="0.0 0.0 0.0 0.0 0.0 0.0 /base_footprint /imu_link 10" />
+    <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0.0 0.0 0.01 0.0 0.0 0.0 /base_footprint /base_link 10" />
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0.0 0.0 0.0 0.0 0.0 0.0 /map /odom 10" />
+
+</launch>

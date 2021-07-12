@@ -239,3 +239,300 @@ account = Account.privateKeyToAccount(priv_key)
 当用户选择使用以太币支付一个订单时，web服务器将根据该订单的订单号 提取或生成对应的以太坊地址，然后在支付页面中展示该收款地址。为了 方便使用手机钱包的用户，可以同时在支付页面中展示该收款地址的二维码。
 
 用户使用自己的以太坊钱包向该收款地址支付以太币。由于网站的支付处理 进程在周期性地检查该收款地址的余额，一旦收到足额款项，支付处理进程 就可以根据收款地址将对应的订单结束，并为用户开通对应的服务。
+
+## 以太坊状态机
+
+以太坊将世界抽象为数量巨大的状态节点，而交易则是导致这些状态节点 的值发生变化的激励。
+
+例如，某个账户的余额就是一个状态节点，它的值在某个时刻是确定的， 如果其他人向该账户发起转账交易，那么在下一个时刻，这个状态节点 旳值就会更新为新的值：
+
+![block transaction and state](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/block-tx-state.png)
+
+以太坊采用一种树形数据结构来保存所有的状态节点，该状态树的根节点则 和交易记录一起保存在区块中。在每一个区块都对应着一棵状态树，它代表 着世界在那个时刻的确定状态 —— 一个快照。
+
+容易理解，状态可以从交易推演出来。例如，要得到一个账户的余额，只需要 把该账户所有的转账交易汇总在一起就可以得出。但以太坊通过使用状态树 来表征交易的结果，使得这一查询可以迅速完成。
+
+## 获取账户余额
+
+以太坊定义了[eth_getBalance](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/8/) 接口用来获取账户余额，在`web3.py`中，对应`Eth`类的`getBalance()`方法。
+
+例如，下面的代码读取节点管理的第一个账户的余额：
+
+```Python
+from web3 import Web3
+
+w3 = Web3(Web3.HTTPProvider('http://localhost:8545'))
+accounts = w3.eth.accounts
+balance = w3.eth.getBalance(accounts[0],'latest')
+print('balance@latest => {0}'.format(balance))
+```
+
+注意`eth_getBalance`接口的第二个参数，使用它来指定一个特定的块。 `'latest'`这个字符串表示使用链上的最后一个块，也就意味着它使用最后一个块的状态树 中记录的账户余额，即当前账户余额：
+
+![block balance](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/block-balance.png)
+
+由于每个块都有对应着块生成那一时刻的状态树，因此你指定一个不同的块，就意味着 将账户余额这个状态回溯到那个块生成的特定时刻。例如，查看这个账户 最初的余额：
+
+```python
+balance = w3.eth.getBalance(accounts[0],'earliest')
+print('balance@earliest => {0}'.format(balance))
+```
+
+也可以使用编号来指定块，例如，查看第12块时的账户余额：
+
+```python
+balance = w3.eth.getBalance(accounts[0],12)
+print('balance@block#12 => {0}'.format(balance))
+```
+
+## 以太坊货币单位
+
+`eth_getBalance`调用返回的数字，其单位为`wei`，是以太币众多面值单位中 最小的一只，而我们常说的1个以太币，则对应单位`ether`，这两者之间差着 18个0：
+
+```
+1 ether = 10^18 wei
+```
+
+以太坊定义了10个等级的面值单位，连续两个单位之间总是差3个0，也就是1000倍 的关系。下表列出了常用的单位：
+
+| 单位               | 单位价值 | 换算为wei                 |
+| :----------------- | :------- | :------------------------ |
+| wei                | 1 wei    | 1                         |
+| Kwei(babbage)      | 1e3 wei  | 1,000                     |
+| Mwei(lovelace)     | 1e6 wei  | 1,000,000                 |
+| Gwei(shannon)      | 1e9 wei  | 1,000,000,000             |
+| microether(szabo)  | 1e12 wei | 1,000,000,000,000         |
+| milliether(finney) | 1e15 wei | 1,000,000,000,000,000     |
+| ether              | 1e18 wei | 1,000,000,000,000,000,000 |
+
+## 货币单位表示与换算
+
+由于在应用逻辑中通常使用wei作为计量单位，`Web3`类提供了两个静态 方法用于将其他单位换算到wei，或者从wei换算到其他单位：
+
+![convert](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/uml-convert.png)
+
+例如，下面的代码将1个ether转换为wei计量的值：
+
+```python
+one_ether = Web3.toWei(1,'ether')
+```
+
+又如，下面的代码将1 wei转换为kwei计量的值：
+
+```python
+one_wei = Web3.fromWei(1,'kwei')
+```
+
+如果你需要进行转换的两个单位中不包含wei，那么可以结合`fromWei()` 和`toWei()`这两个函数，先转化到wei，再转化到目标单位。
+
+## 交易类型
+
+在以太坊中，约定了两种交易：普通交易（`Transaction`）和裸交易（`RawTransaction`）。
+
+这两种交易的区别在于：普通交易由节点负责签名，然后发送到网络中进行确认；
+
+![transaction process](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/tx-proc.png)
+
+而裸交易则由外部应用进行签名，节点不再额外处理，而只是负责发送到网络中进行确认 —— 这也是裸交易名称的由来 —— 未经节点加工的原始交易：
+
+![raw transaction process](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/raw-tx-proc.png)
+
+以太坊约定了两种交易不同的提交接口：普通交易使用`eth_sendTransaction` 调用提交，而裸交易则应当使用`eth_sendRawTransaction`调用提交。事实上， 在公共节点中，通常会拒绝普通交易的提交，而要求外部应用必须进行离线签名。
+
+## 提交普通交易
+
+普通交易由节点负责进行签名。在`web3.py`中，提交一个普通交易，需要使用 `Eth`类的`sendTransaction()`方法发送一个请求包，该方法对应 [eth_sendTransaction](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/17/) 这个RPC接口。
+
+应用首先应当准备一个请求包，其中可以包含以下内容：
+
+- from: 发送交易的源地址
+- to: 交易的目标地址
+- gas: 交易执行gas用量上限
+- gasPrice: gas价格
+- value: 交易发送的金额，单位：wei
+- data: 额外携带的数据
+- nonce: 一次性序号，用来对抗重放攻击
+
+不过只有发送方和接收方的信息是必须的，其他不需要的信息都可以不填。例如， 下面的代码从节点第1个账户向第2个账户转100wei的资金，我们只需要设置`from`、 `to`和`value`字段：
+
+```python
+accounts = w3.eth.accounts
+payload = {
+  'from': accounts[0],
+  'to': accounts[1],
+  'value': 100
+}
+tx_hash = w3.eth.sendTransaction(payload)
+```
+
+向节点成功发送交易请求后，节点将返回该交易的哈希值。不过由于ganache是实时完成交易的，所以我们可以 马上检查第1个账户的余额：
+
+```python
+balance = w3.eth.getBalance(accounts[0],'latest')
+```
+
+## 获取交易数据
+
+由于以太坊的交易需要提交到网络中进行共识处理，因此我们提交的交易不会 马上生效。要查询交易是否生效，需要使用`eth_sendTransaction`调用返回 的交易哈希读取交易收据。
+
+根据以太坊的约定，应用需要调用[eth_getTransactionReceipt](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/26/) 接口来检索具有指定哈希交易的收据。
+
+例如，下面的代码读取具有指定哈希的交易的收据：
+
+```python
+receipt = w3.eth.getTransactionReceipt(tx_hash)
+```
+
+交易收据是一个`AttributeDict`对象，因此你可以直接使用`.`来访问以下属性：
+
+- transactionHash: 交易哈希
+- transactionIndex: 交易在块内的索引序号
+- blockHash: 交易所在块的哈希
+- blockNumber: 交易所在块的编号
+- cumulativeGasUsed: 交易所在块消耗的gas总量
+- gasUsed: 本次交易消耗的gas用量
+- contractAddress: 对于合约创建交易，该值为新创建的合约地址，否则为null
+- logs: 本次交易生成的日志对象数组
+
+例如，查看这个交易消耗的`gas`：
+
+```python
+print('gas used => {0}'.format(receipt.gasUsed))
+```
+
+按照以太坊的出块速度，大约最快需要15秒交易才可能得到确认，因此我们需要 周期性地检查交易收据。例如，下面的代码每隔2秒钟检查一次交易收据， 直到60秒超时或取得有效收据：
+
+```python
+def waitForReceipt(tx_hash,timeout=60,interval=2):
+  t0 = time.time()
+  while True:
+    receipt = w3.eth.getTransactionReceipt(txhash)
+    if receipt is not None:
+      break
+    delta = time.time() - t0
+    if delta > timeout :
+      break
+    time.sleep(interval)
+
+  return receipt
+
+receipt = waitForReceipt(tx_hash)  
+print(receipt)
+```
+
+`web3.py`的`Eth`类也提供了`waitForTransactionReceipt()`方法来等待 交易收据，它的实现逻辑基本和上面的代码一致，区别在于它在一个单独的 线程里等待收据。例如，下面的代码设置超时时长为60s:
+
+```python
+receipt = w3.eth.waitForTransactionReceipt(tx_hash,60)
+```
+
+## gas价格与用量
+
+在我们之前创建交易对象时，有意忽略了gas相关的参数，让节点自己决定。 因为，gas是以太坊中最令人迷惑的概念之一。
+
+**Gas**：Gas对应于一个交易(Transaction)中以太坊虚拟机(EVM)的实际运算步数。 越简单的交易，例如单纯的以太币转帐交易，需要的运算步数越少， Gas亦会需要的少一点。 反之，如果要计算一些复杂运算，Gas的消耗量就会大。
+
+**Gas Price**：Gas Price就是你愿意为一个单位的Gas出多少Eth，一般用Gwei作单位。 所以Gas Price 越高， 就表示交易中每运算一步，会支付更多的Eth。
+
+因此，以太坊的交易手续费计算公式很简单：
+
+```
+交易手续费(Tx Fee) = 实际运行步数(Actual Gas Used) * 单步价格(Gas Price)
+```
+
+例如你的交易需要以太坊执行50步完成运算，假设你设定的Gas Price是2 Gwei ，那么整个 交易的手续费 就是50 * 2 = 100 Gwei 了。
+
+**Gas Limit**：Gas Limit就是一次交易中Gas的可用上限，也就是你的交易中最多会执行多少步运算。 由于交易复杂程度各有不同， 确切的Gas消耗量是在完成交易后才会知道，因此在你提交交易之前，需要为交易设定一个Gas用量的上限。
+
+如果说你提交的交易尚未完成，消耗的Gas就已经超过你设定的Gas Limit，那么这次交易就会被取消，而已经消耗的手续费同样被扣取 —— 因为要奖励已经付出劳动的矿工。 而如果交易已经完成，消耗的Gas未达到Gas Limit， 那么只会按实际消耗的Gas 收取交易服务费。 换句话说，一个交易可能被收取的最高服务费就是Gas Limit * Gas Price 了。
+
+最后值得一提的是Gas Price 越高，你提交的交易会越快被矿工接纳。 但通常人们都不愿多支付手续费， 那么究竟应该将Gas Price设置为多少，才可以在正常时间(eg 10 mins)内，确保交易被确认到区域链上呢？ [这个网站](http://ethgasstation.info/)可以帮到你。
+
+## 估算交易的gas用量
+
+以太坊提供了一个接口[eth_estimateGas](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/20/) 用来估算一个交易的gas用量。在`web3.py`中，对应于`Eth`类的`estimateGas()`方法。
+
+例如，下面的代码估算向链上写入数据用量：
+
+```python
+payload = {
+  'from': accounts[0],
+  'to': accounts[1],
+  'value': 1000
+}
+estimation = w3.eth.estimateGas(payload)
+```
+
+`eth_estimateGas`调用的实现原理是，仅仅在节点自己的EVM中执行这个交易并返回交易的gas消耗量。与实际提交交易不同，这个调用不会把交易扩散到其他 节点。
+
+要写入的字节越多，所需要消耗的gas越多。例如，在下面的代码中，我们估算将整本《孙子兵法》写入链上的gas用量：
+
+```python
+with open('./the-art-of-war.txt') as f:
+  txt = f.read()
+
+payload = {
+  'from': accounts[0],
+  'to': accounts[0],
+  'data': to_hex(str.encode(txt))
+}
+estimation = w3.eth.estimateGas(payload)
+```
+
+## 使用裸交易
+
+与普通交易由节点负责签名不同，裸交易需要外部应用进行离线签名。 因此在使用裸交易之前，需要首先载入账户对象 —— 要用到其中 保存的私钥进行签名：
+
+![raw transaction steps](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/raw-tx-steps.png)
+
+可以使用钱包来实例化一个账户凭证对象，例如，下面的代码使用 密码`123`解密指定的钱包文件并重建账户对象：
+
+```python
+with open('./keystore/...','r') as f:
+  wallet = json.load(f)
+priv_key = Account.decrypt(wallet,'123')  
+account = Account.privateKeyToAccount(priv_key)
+```
+
+接下来创建裸交易对象。由于发送方将对裸交易签名，因此在裸交易对象中不需要重复指定发送方账户。例如，下面的代码将构造一个从钱包账户向节点第2个账户转账的裸交易对象：
+
+```python
+nonce = w3.eth.getTransactionCount(account.address)
+payload = {
+  'to': accounts[1],
+  'value': 100,
+  'gas': 200000,
+  'gasPrice': Web3.toWei(20,'gwei'),
+  'nonce': nonce,
+  'chainId': 1
+}
+```
+
+`nonce`的作用是对抗重放攻击，在不同的交易中它应当是不重复的，除非你需要覆盖之前 的交易。在以太坊中应当将这个值设置为发送方账户已经发送的交易数量 —— 使用 [eth_getTransactionCount](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/10/) 调用来获取这个值，对应于`web3.py`中的`getTransactionCount()`方法。
+
+一旦创建了裸交易对象，就可以使用发送方账户对其进行签名，签名的结果是一个 字符串：
+
+```python
+signed = account.signTransaction(payload)
+print('signed payload => {0}'.format(to_hex(signed.rawTransaction)))
+```
+
+`Account`对象的`signTransaction()`方法返回一个`AttributeDict`，其中的`rawTransaction` 属性包含了我们需要提交给节点旳签名码流。看起来是这样：
+
+```python
+{
+  'hash': HexBytes('0x6893a6ee8df79b0f5d64a180cd1ef35d030f3e296a5361cf04d02ce720d32ec5'),
+  'r': 4487286261793418179817841024889747115779324305375823110249149479905075174044,
+  'rawTransaction': HexBytes('0xf86a8086d55698372431831e848.......216a6f3ee2c051fea6a0428'), 
+  's': 30785525769477805655994251009256770582792548537338581640010273753578382951464,
+  'v': 37
+}
+```
+
+一切就绪，调用`eth_sendRawTransaction`接口来发送裸交易请求，这对应于`web3.py` 的`sendRawTransaction()`方法：
+
+```python
+tx_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
+receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+```
+

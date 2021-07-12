@@ -1,0 +1,16 @@
+controller_frequency: 2.0
+controller_patience: 15.0
+
+planner_frequency: 1.0
+planner_patience: 5.0
+
+conservative_reset_dist: 0.2
+
+oscillation_timeout: 10.0
+oscillation_distance: 0.2
+
+clearing_rotation_allowed: false
+
+# Planner selection 规划器选项
+base_global_planner: "global_planner/GlobalPlanner" #指定用于move_base的全局规划器插件名称.
+base_local_planner: "teb_local_planner/TebLocalPlannerROS" # 指定用于move_base的局部规划器插件名称.

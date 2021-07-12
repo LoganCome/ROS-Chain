@@ -1,0 +1,8 @@
+prefix=/home/itcast/Documents/zxcar_ws6/src/zxcar/cmake-build-debug/devel
+
+Name: zxcar
+Description: Description of zxcar
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

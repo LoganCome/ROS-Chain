@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libgtest.so -o libgtest.so CMakeFiles/gtest.dir/src/gtest-all.cc.o  -L/home/itcast/Documents/zxcar_ws6/src/zxcar_driver/cmake-build-debug/gtest/googlemock/gtest/src -Wl,-rpath,/home/itcast/Documents/zxcar_ws6/src/zxcar_driver/cmake-build-debug/gtest/googlemock/gtest/src -lpthread 

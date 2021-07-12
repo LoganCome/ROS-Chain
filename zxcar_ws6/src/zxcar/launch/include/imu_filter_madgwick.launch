@@ -1,0 +1,26 @@
+<!--
+<launch>
+    <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen">
+        <param name="world_frame" value="enu"/>
+        <param name="use_mag " value="true"/>
+        <param name="use_magnetic_field_msg " value="true"/>
+        <param name="fixed_frame " value="base_footprint"/>
+        <param name="publish_tf " value="true"/>
+        <param name="reverse_tf " value="false"/>
+        <param name="orientation_stddev" value="0.05" />
+        <param name="angular_scale " value="1.0"/>
+    </node>
+</launch> -->
+<launch>
+    <!-- Filter and fuse raw imu data -->
+        <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
+            <param name="fixed_frame" value="base_footprint" />
+            <param name="use_mag" value="true" />
+            <param name="publish_tf" value="true" />
+            <param name="use_magnetic_field_msg" value="true" />
+            <param name="world_frame" value="enu" />
+            <param name="orientation_stddev" value="0.05" />
+            <param name="angular_scale" value="1.00" />
+
+        </node>
+</launch>

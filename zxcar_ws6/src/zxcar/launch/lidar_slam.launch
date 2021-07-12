@@ -1,0 +1,7 @@
+<launch>
+    <include file="$(find zxcar)/launch/bringup.launch"/>
+    <include file="$(find zxcar)/launch/include/rplidar.launch"/>
+    <include file="$(find zxcar)/launch/include/slam_gmapping.launch"/>
+    <include file="$(find zxcar)/params/ackermann/move_base.xml"/>
+
+</launch>

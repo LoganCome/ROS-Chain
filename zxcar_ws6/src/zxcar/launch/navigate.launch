@@ -1,0 +1,7 @@
+<launch>
+    <include file="$(find zxcar)/launch/bringup.launch"/>
+    <include file="$(find zxcar)/launch/include/rplidar.launch"/>
+    <include file="$(find zxcar)/params/ackermann/move_base.xml"/>
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find zxcar)/params/maps/house.yaml"/>
+
+</launch>
