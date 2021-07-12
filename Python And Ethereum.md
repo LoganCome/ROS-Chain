@@ -536,3 +536,432 @@ tx_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
 receipt = w3.eth.waitForTransactionReceipt(tx_hash)
 ```
 
+## ERC20代币规范
+
+目前几乎所有用于ICO筹集资金的代币，都是基于同样的技术：以太坊ERC-20标准，这些代币实际上就是实现了ERC20标准的智能合约。
+
+一个ERC20代币合约应当实现如下标准的接口，当然你也可以根据自己的实际需要补充额外的接口：
+
+```python
+contract ERC20 {
+   function totalSupply() constant returns (uint theTotalSupply);
+   function balanceOf(address _owner) constant returns (uint balance);
+   function transfer(address _to, uint _value) returns (bool success);
+   function transferFrom(address _from, address _to, uint _value) returns (bool success);
+   function approve(address _spender, uint _value) returns (bool success);
+   function allowance(address _owner, address _spender) constant returns (uint remaining);
+   event Transfer(address indexed _from, address indexed _to, uint _value);
+   event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+```
+
+**totalSupply()** 
+
+该函数应当返回流通中的代币供给总量。比如你准备为自己的网站发行100万个代币。
+
+**balanceOf()**
+
+该函数应当返回指定账户地址的代币余额。
+
+**approve()**
+
+使用该函数进行授权，被授权的账户可以调用账户的名义进行转账。
+
+**transfer()**
+
+该函数让调用账户进行转账操作，将指定数量的代币发送到另一个账户。
+
+**transferFrom()**
+
+该函数允许第三方进行转账操作，转出账户必须之前已经调用**approve()**方法授权给调用账户。
+
+**Transfer事件**
+
+每次转账成功后都必须触发该事件，参数为：转出账户、转入账户和转账代币数量。
+
+**Approval事件**
+
+每次进行授权，都必须触发该事件。参数为：授权人、被授权人和授权额度。
+
+除了以上必须实现的接口，ERC20还约定了几个可选的状态，以便钱包或 其他应用可以更好的标识代币：
+
+- **name** ： 代币名称。例如：`HAPPY COIN`。
+- **symbol** ： 代币符号。例如：`HAPY` ，在钱包或交易所展示这个名字。
+- **decimals** ：小数位数。默认值为18。钱包应用会使用这个参数。例如 假设你的代币小数位数设置为2，那么1002个代币在钱包里就显示为10.02了。
+
+## 代币合约状态设计
+
+智能合约的设计核心是状态的设计，然后再围绕状态设计相应的操作。代币合约也不例外。
+
+首先我们需要有一个状态来记录代币发行总量，通常这个总量在合约部署的 时候就固定下来了，不过你也可以定义额外的非标接口来操作这个状态， 例如增发（`Secondary Coin Offering`）：
+
+![erc20 supply state](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/erc20-state-supply.png)
+
+在solidity中，我们可以使用一个uint256类型的变量来记录发行总量：
+
+```
+uint256 totalSupply;
+```
+
+接下来我们还需要有一个状态来保存所有账户的代币余额：
+
+![erc20 balance state](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/erc20-state-balance.png)
+
+在solidity中，可以使用一个从账户地址到整数（表示余额）的映射表来表示这个状态：
+
+```
+mapping(address => uint256) balances;
+```
+
+最后一个重要的状态是授权关系，我们需要记录三个信息：授权账户、被授权账户和授权额度：
+
+![erc20 allow state](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/erc20-state-allow.png)
+
+```
+mapping (address => mapping (address => uint256)) public allowed;
+```
+
+## 代币合约方法实现
+
+```
+constructor(
+    uint256 _initialAmount,
+    string _tokenName,
+    uint8 _decimalUnits,
+    string _tokenSymbol
+) public {
+    balances[msg.sender] = _initialAmount;               
+    totalSupply = _initialAmount;                        
+    name = _tokenName;                                   
+    decimals = _decimalUnits;                            
+    symbol = _tokenSymbol;                               
+}
+```
+
+构造函数保存了传入四个参数：初识发行总量、代币名称、小数点位数和代币符号。 在上面的实现中，**部署合约的账户在开始时将持有所有的代币**。
+
+**transfer(to,value)**
+
+容易理解，`transfer()`函数操作的状态就是balances。实现逻辑很直白，代码如下：
+
+```
+function transfer(address _to, uint256 _value) public returns (bool success) {
+    require(balances[msg.sender] >= _value);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    emit Transfer(msg.sender, _to, _value); 
+    return true;
+}
+```
+
+由于`transfer()`是从调用账户转出代币，因此首先需要检查调用账户的代币余额是否足够。 接下来就可以分别调整双方的账户余额，然后触发`Transfer`事件即可。
+
+**approve(spender,value)**
+
+`approve()`函数操作的状态是allowed。实现逻辑同样直白，上代码：
+
+```
+function approve(address _spender, uint256 _value) public returns (bool success) {
+    allowed[msg.sender][_spender] = _value;
+    emit Approval(msg.sender, _spender, _value); 
+    return true;
+}
+```
+
+修改allowed映射表之后，触发`Approval`事件即可。
+
+**transferFrom(from,to,value)**
+
+`transferFrom()`方法的逻辑相对复杂一点，它需要同时操作balances状态和allowed状态：
+
+```
+function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+    uint256 allowance = allowed[_from][msg.sender];
+    require(balances[_from] >= _value && allowance >= _value);
+    balances[_to] += _value;
+    balances[_from] -= _value;
+    if (allowance < MAX_UINT256) {
+        allowed[_from][msg.sender] -= _value;
+    }
+    emit Transfer(_from, _to, _value); //solhint-disable-line indent, no-unused-vars
+    return true;
+}
+```
+
+代码首先查看allowed状态来确定调用账户是否得到转出账户的授权以及授权额度是否足够 本次转账。然后还要检查转出账户的余额是否足够本次转账。这些条件满足以后，直接调整 balances状态中转出账户和转入账户的余额，同时调整allowed状态中响应的授权额度。最后 触发`Transfer`事件即可。
+
+**balanceOf(owner)**
+
+`balanceOf()`方法只是查询balances状态，因此它是一个不消耗gas的`view`函数：
+
+```
+function balanceOf(address _owner) public view returns (uint256 balance) {
+    return balances[_owner];
+}
+```
+
+**allowance(owner,spender)**
+
+`allowance()`方法查询账户对的授权额度，显然，它也是一个不修改状态的`view`函数：
+
+```
+function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+    return allowed[_owner][_spender];
+}
+```
+
+## 编译代币合约
+
+为了在Python代码中与合约交互，我们需要先编译solidity编写的合约，以便得到 EVM字节码和二进制应用接口（`ABI`）。
+
+字节码是最终运行在以太坊虚拟机中的代码，看起来就是这样：
+
+```
+608060405234801561001057600080fd5b5060405...
+```
+
+每两个字符表示1个字节，就像PC里的机器码，以太坊的字节码对应着以太坊虚拟机的操作码 —— 字节码就是最终在以太坊的EVM上运行的合约代码，我们在部署合约的时候需要用到它。
+
+而ABI则是描述合约接口的一个JSON对象，用来在其他开发语言中调用合约。ABI 描述了合约中的每个方法、状态与事件的语言特性。例如，对于代币合约中的 `transfer()`方法，在ABI中描述如下：
+
+![abi](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/abi.png)
+
+ABI提供的丰富信息是实现其他语言绑定的关键资料。任何时候与合约进行交互， 都需要持有合约的ABI信息。
+
+solidity的官方编译器`solc`是一个命令行程序，根据运行选项的不同会有 不一样的行为。例如，下面的使用`--bin`和`--abi`选项要求solc编译器同时生成字节码文件和ABI文件，并输出到`build`目录：
+
+```
+~$ mkdir -p contract/build
+~$ solc contract/EzToken.sol --bin --abi \
+                   --optimize --overwrite \
+                   -o contract/build/
+```
+
+编译成功后，将在build目录中得到两个文件，这是我们下一步工作的基础：
+
+```
+~$ ls contract/build
+EzToken.abi EzToken.bin
+```
+
+## 使用Python编译合约
+
+如果你追求纯粹，希望整个开发流水线都使用Python，而不借助于bash脚本， 那么也可以借助于`py-solc`这个包在Python脚本中编译合约。
+
+例如，下面的代码载入`EzToken.sol`源代码，然后编译：
+
+```python
+import solc
+
+with open('./contract/EzToken.sol','r') as f:
+  source = f.read()
+
+compiled = solc.compile_source(source)
+```
+
+编译结果是一个`Dict`，我们感兴趣的abi和字节码在`<stdin:EzToken>`下， 为了后续部署和调用合约，我们这两部分内容保存下来：
+
+```python
+root = compiled['<stdin>:EzToken']
+
+with open('./contract/build/EzToken.abi','w') as f:
+  json.dump(root['abi'],f)
+
+with open('./contract/build/EzToken.bin','w') as f:
+  f.write(root['bin'])
+```
+
+## 合约部署原理
+
+在以太坊中，合约的部署也是一个交易，只是与普通的交易相比，部署交易需要把合约的字节码和编码后构造函数参数放在payload的`data`字段里，然后 通过`eth_sendTransaction`或`eth_sendRawTransaction`调用提交给节点：
+
+![deploy tx data](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/deploy-tx-data.png)
+
+构造函数的参数需要首先经过abi编码才可以附加在字节码之后提交。例如， 对于EzToken合约，如果我们希望发行10亿枚HAPY币，其编码后的数据布局示意如下：
+
+![deploy tx abi](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/deploy-tx-abi.png)
+
+编码后的数据按32字节对齐，在上图中每一行都是32个字节。
+
+第一个参数`_initialAmount`是静态的`uint256`类型，因此直接补齐为32字节， 占据第一行；第二个参数`_tokenName`是动态的`string`类型，因此第二行将 保存该参数值的实际位置，即上图中指向的`0x0080`位置；第三个参数`_decimalUnit` 是静态的`uint8`类型，因此也直接补齐为32字节，占据第三行；第四个参数`_tokenSymbol` 同样是动态的`string`类型，因此第四行保存的是该参数值的实际保存位置，即 `0x00c0`位置。
+
+一个`string`类型的数据，在编码时首先使用32字节保存其长度，例如上图中 `0x0080`位置，然后在接下来按32字节对齐填写实际的内容，即`HAPPY COIN`。
+
+这看起来很麻烦，好在`eth_abi`包提供了现成的方法可以使用，我们只需要理解 上述编码原理就可以了。
+
+我们可以使用`eth_abi`包的`encode_abi()`方法来对构造函数的参数进行编码，例如
+
+```python
+encoded_params = encode_abi(['uint256','string','uint8','string'],[1000000000,'HAPPY COIN',0,'HAPY']))
+```
+
+然后拼接到合约字节码的后面，并将结果转换为16进制字符串：
+
+```python
+with open('./contract/build/EzToken.bin') as f:
+  bin = f.read()
+tx_data = to_hex(HexBytes(bin) + encoded_params)
+```
+
+现在可以提交部署交易了，例如使用第一个节点账户提交：
+
+```python
+payload = {
+  'from': accounts[0],
+  'data': tx_data
+}
+tx_hash = w3.eth.sendTransaction(payload)
+```
+
+需要指出的是，==**合约部署交易载荷的`to`字段必须留空**==。
+
+如果交易成功，在部署交易的收据里，将包含合约的部署地址：
+
+```python
+receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+print(receipt.contractAddress)
+```
+
+## 使用合约类部署代币合约
+
+有了合约的字节码和ABI，更简单的办法是使用`Eth`类的`contract()`方法来部署合约到链上。
+
+首先载入之前保存的字节码和ABI：
+
+```python
+with open('./contract/build/EzToken.abi','r') as f:
+  abi = json.load(f)
+
+with open('./contract/build/Eztoken.bin','r') as f:
+  bin = f.read()
+```
+
+然后调用`contract()`方法创建一个合约工厂：
+
+```python
+factory = w3.eth.contract(abi=abi,bytecode=bin)
+```
+
+然后调用合约工厂的`constructor()`方法来执行对合约构造函数及调用参数的编码：
+
+```python
+wrapper = factory.constructor(1000000,'HAPPY COIN',0,'HAPY')
+```
+
+传入的4个参数对应于合约的构造函数的参数列表，因此上面的代码意味着我们 希望发行1000000枚HAPY币。在`wrapper`的`data_in_transaction`中保存有编码后的数据，我们可以在payload的`data`字段使用这个数据。例如：
+
+```python
+payload = {
+  'from': accounts[0],
+  'data': wrapper.data_intransaction
+}
+txhash = w3.eth.sendTransaction(payload)
+```
+
+不过`wrapper`也提供了封装好的交易发送方法`transact()`，我们直接调用即可。 例如，下面的代码使用节点第一个账户来部署合约：
+
+```python
+tx_hash = wrapper.transact({'from': accounts[0]})
+```
+
+由于部署账户是节点旳第1个账户，该账户将持有初始发行的全部代币。
+
+接下来要等待交易收据，因为在收据中有合约部署的具体地址：
+
+```python
+receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+print('deployed address => {0}'.format(receipt.contractAddress))
+```
+
+在合约部署后，最重要的一件事，是把地址抄下来，或者记录到一个文件中，否则接下来没法访问合约了。
+
+```python
+with open('./contract/build/EzToken.addr','w') as f:
+  f.write(receipt.contractAddress)
+```
+
+## 合约方法执行原理
+
+当合约部署上链后，我们就可以通过以下调用来执行合约方法了：
+
+- eth_sendTransaction - 执行合约中修改状态的方法，节点负责签名
+- eth_sendRawTransaction - 执行合约中修改状态的方法，应用负责签名
+- eth_call - 执行合约中的状态只读方法
+
+类似于合约的部署交易，我们首先需要将函数选择符及参数值列表组合为16进制字符串：
+
+![call data](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/call-data.png)
+
+函数选择符就是函数名及参数列表的Keccak哈希的头4个字节，例如， 下面的代码计算一个`balanceOf()`调用的选择符：
+
+```python
+func_hash = keccak('balanceOf(address)')
+selector = func_hash[:4]
+```
+
+同样，我们使用`eth_abi`包的`encode_abi()`方法来编码函数调用参数：
+
+```python
+encode_params = encode_abi(['address'],[accounts[0]])
+```
+
+然后拼接函数选择符和编码参数，并转化为16进制字符串：
+
+```python
+data = to_hex(HexBytes(selector) + encoded_params)
+```
+
+由于合约`balanceOf()`方法并不修改合约的状态，因此我们使用`eth_call`调用：
+
+```python
+payload = {
+  'from': accounts[0],
+  'to': contract_address,
+  'data': data
+}
+ret = w3.eth.call(payload)
+```
+
+返回值是abi编码的，因此我们需要使用`eth_abi`包的`decode_single()`来反过来解码：
+
+```python
+balance = decode_single('uint256',ret)
+```
+
+前一节我们从原理上理解了如何调用合约的方法。不过`web3.py`提供了封装好 的接口，我们不必这么麻烦。
+
+首先还是老样子，要访问一个已经部署在链上的合约，先载入它的ABI和部署地址。
+
+```python
+with open('./contract/build/EzToken.abi') as f:
+  abi = json.load(f)
+with open('./contract/build/EzToken.addr') as f:
+  addr = f.read()
+```
+
+然后构建合约对象，设置其部署地址和ABI：
+
+```python
+token = w3.eth.contract(address=addr,abi=abi)
+```
+
+接下来就可以调用合约的方法了。这分两种情况。
+
+如果是那些修改合约状态的交易函数，比如`transfer()`， 使用方法包装对象的`transact()`方法，这将映射到`eth_sendTransaction` 调用。例如，向第2个节点账户转一些代币：
+
+```python
+wrapper = token.functions.transfer(accounts[1],10)
+txhash = wrapper.transact({'from':accounts[0]})
+w3.eth.waitForTransactionReceipt(txhash)
+```
+
+交易函数返回的总是交易哈希，我们总是应该等待交易收据。
+
+注意，因为我们使用使用第1个节点账户部署的合约，因此现在它持有全部的代币。
+
+如果是要调用合约中的只读函数，例如`balanceOf()`，那么使用方法包装对象的`call()`方法，这将映射到`eth_call`调用。例如，获取第1个节点账户的代币余额：
+
+```python
+wrapper = token.functions.balanceOf(accounts[0])
+balance = wrapper.call()
+```
