@@ -1036,5 +1036,129 @@ while True:
 
 `getBlock()`方法的第二个参数用来声明是否需要返回完整的交易对象， 如果设置为false将仅返回交易的哈希。
 
-## 监听代交易事件
+## 监听待交易事件
+
+待定交易指那些提交给节点但还未被网络确认的交易，因此它不会包含在区块中。 使用待定交易过滤器来监听新待定交易事件。其过程如下：
+
+![pending tx filter](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/pending-tx-filter.png)
+
+使用参数`pending`来调用`filter()`方法，即可创建一个待定交易过滤器。该方法 内部执行[eth_newPendingTransactionFilter](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/35/) 调用：
+
+```
+filter = w3.eth.filter('pending')
+```
+
+然后同样是通过周期性地调用`get_new_entries()`方法来获取最新的待定交易信息。 例如，下面的代码将打印新出现的待定交易哈希：
+
+```
+while True:
+  for tx_hash in filter.get_new_entries():
+    print('pending tx hash => {0}'.format(tx_hash))
+
+  time.sleep(2)
+```
+
+对于待定交易过滤器，`get_new_entries()`方法返回的结果是自上次 调用之后新产生的一组待定交易的哈希。可以使用`getTransaction()`方法来获取交易的 详细信息，该方法内部执行[eth_getTransactionByHash](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/23/) 调用：
+
+```
+tx = w3.eth.getTransaction(tx_hash)
+print('tx data => {0}'.format(tx.input))
+```
+
+## 监听合约事件
+
+合约事件的监听是通过主题过滤器实现的，其过程如下：
+
+![event filter](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/event-filter.png)
+
+首先使用一个`Dict`对象作为参数调用`filter()`方法来创建一个主题过滤器， 该方法在内部执行[eth_newFilter](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/33/)调用 ，并返回LogFilter对象：
+
+```
+filter = w3.eth.filter({})
+```
+
+`eth_newFilter`调用可以接收一个`Dict`类型的选项参数，来过滤监听的日志类型。该选项 可以指定一些监听过滤条件，例如要监听的合约地址等。 不过在上面的代码中，我们使用一个空的字典，没有设置这些参数，这意味着我们将监听全部日志。
+
+在创建主题过滤器之后，同样使用过滤器的`get_new_entries()`方法 进行周期性的检查，看是否有新的日志产生。该调用将返回自上次调用之后的所有新日志的数组：
+
+```
+while True:
+  for log in filter.get_new_entries():
+    pprint(log)
+
+  time.sleep(2)
+```
+
+每一个日志在`web3.py`中被映射到一个`AttributeDict`对象，其中的`topics`和`data`中 包含了我们感兴趣的数据。但显然，捕捉到的日志还需要进一步解码才可以得到事件的参数：
+
+![log data](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/log-data.png)
+
+## 使用主题过滤日志
+
+当我们创建主题过滤器时，以及查看日志数据时，都接触到了一个概念：主题。 以太坊利用主题来区别不同的事件。
+
+主题实际上就是事件的Keccak哈希签名。例如，对于代币合约的`Transfer` 事件，它的签名计算如下：
+
+![topic](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/topic.png)
+
+例如，下面的代码计算`Transfer`事件的签名：
+
+```
+topic = to_hex(keccak('Transfer(address,address,uint256)'))
+```
+
+在创建主题过滤器时，就可以用这个主题来限定监听行为了：
+
+```
+opts = {
+  'topics': [topic]
+}
+filter = w3.eth.filter(opts)
+```
+
+现在，只有`Transfer`事件才会触发日志了。
+
+## 解码日志数据
+
+日志中的`topics`和`data`字段，包含了我们感兴趣的数据。
+
+`topics`的第一个成员，总是相应事件的签名。而其他的成员则有序对应着事件 参数中的有索引（`indexed`）参数：
+
+![log decode](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/log-decode.png)
+
+因此我们首先依次解码参数即可：
+
+```
+from eth_abi import decode_single
+
+from_account = decode_single('address',bytes(log['topics'][1]))
+to_account = decode_single('address',bytes(log['topics'][2]))
+value = decode_single('uint256',to_bytes(hexstr=log['data']))
+```
+
+由于`Transfer`事件的value参数不是有索引参数，因此它的值在日志的`data`字段中。 如果存在多个无索引参数时，则`data`字段是这些参数按32字节顺序拼接的结果：
+
+通过前面两节的学习，我们已经理解了如何使用主题来监听特定的事件，也理解 了如何解码日志中的事件参数。不过实际上`web3.py`已经做了很好的封装，在 实际使用时我们不必如此麻烦。
+
+当我们创建`Contract`对象时，会自动根据合约的abi生成一组`ContractEvent`类 的实例保存在合约对象的`events`属性中。例如，对于`Transfer`事件，我们 可以通过合约实例的`events.Transfer`访问这个合约事件对象。
+
+合约事件对象封装了abi编解码的繁琐环节，我们可以直接利用它的`createFilter()` 方法来创建一个`LogFilter`对象：
+
+```
+filter = token.events.Transfer.createFilter(fromBlock=0)
+```
+
+同样，定期使用这个主题过滤器的`get_new_entries()`方法来读取新的合约日志：
+
+```
+while True:
+  for event in filter.get_new_entries():
+    print(event.event,event.args)
+
+  time.sleep(2)
+```
+
+从上面的代码容易看到，`LogFilter`已经自动帮我们进行了事件主题过滤和 参数解码工作，`get_new_entries()`方法返回的不再是原始的日志，而是解析 过的事件，其`event`属性表示事件名，`args`属性则包含了事件触发时的参数值。
+
+> 由于ganache-cli一个已知的bug，它会自动将地址转化为小写字符，因此使用一个 具有混合大小写字符的校验和地址建立的过滤器将无法正常触发。为此我们修改了 `web3.utils.valitation`模块中的`validation()`方法，以便让它可以接受小写形式 的地址 —— 这不是web3.py的问题，是ganache-cli的bug。
 
