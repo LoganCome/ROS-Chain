@@ -965,3 +965,76 @@ w3.eth.waitForTransactionReceipt(txhash)
 wrapper = token.functions.balanceOf(accounts[0])
 balance = wrapper.call()
 ```
+
+## 通知机制
+
+通知机制对任何应用开发都很重要，因为它提供了另外一个方向的调用能力。 以太坊也不例外，它的通知机制增强了智能合约与外部应用之间的沟通能力。
+
+以太坊的通知机制是建立在日志基础之上。例如，如果智能合约触发了一个事件，那么该事件将写入以太坊日志；如果外部应用订阅了这个事件，那么应用就可以在日志中出现该事件后及时检测到：
+
+![notification](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/notification.png)
+
+需要指出的是，以太坊的通知机制不是推（`Push`）模式，而是需要外部应用周期性轮询的拉（`Pull`）模式。外部应用通过在节点中创建过滤器来订阅感兴趣 的日志，之后则通过检测该过滤器的变化获得最新的日志。
+
+在这一部分的课程中，我们将学习以下内容：
+
+- 使用块过滤器监听新块生成事件和新交易事件
+- 使用待定交易过滤器监听待定交易事件
+- 使用主题过滤器监听合约事件
+- 解析合约事件产生的日志
+
+## 监听新块事件
+
+首先使用`latest`参数调用`Eth`类的`filter()`方法获取一个块过滤器对象， 该方法在内部执行[eth_newBlockFilter](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/34/)调用 来创建一个新块过滤器：
+
+```python
+filter = w3.eth.filter('latest')
+```
+
+周期调用其`get_new_entries()`方法即可获取新的日志。该方法在内部则执行 [eth_getFilterChanges](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/37/)调用：
+
+```python
+while True:
+  for bk_hash in filter.get_new_entries():
+    print(bk_hash)
+  time.sleep(2)
+```
+
+对于块过滤器，`eth_getFilterChanges`调用将返回块哈希值的数组。 如果你希望获取块的详细信息，可以使用`Eth`类的`getBlock()`方法来获取块的 详细信息。例如，下面的代码获取并显示块的时间戳：
+
+```python
+block = w3.eth.getBlock(blk_hash)
+print('timestamp => {0}'.format(block.timestamp))
+```
+
+`getBlock()`方法在参数是一个块哈希时，将通过 [eth_getBlockByHash](http://cw.hubwiz.com/card/c/ethereum-json-rpc-api/1/3/21/) 调用来获取块的详细信息。该方法返回一个`AttributeDict`对象，因此可以使用`block.timestamp` 或`block['timestamp']`来获取属性值。
+
+## 监听新交易事件
+
+要监听新的确认交易，也是使用块过滤器。其过程如下：
+
+![tx filter](http://xc.hubwiz.com/class/5b40462cc02e6b6a59171de4/img/tx-filter.png)
+
+实际上它的实现机制，就是在捕捉到新块事件后，进一步获取新块的详细信息。
+
+因此和监听新块事件一样，首先使用`latest`参数调用`filter()`创建一个 块过滤器：
+
+```python
+filter = w3.eth.filter('latest')
+```
+
+然后调用周期性调用过滤器的`get_new_entries()`方法进行检查。 对于该调用返回的每一个块哈希，进一步调用`getBlock()`方法获取块内交易信息：
+
+```python
+while True:
+  for bk_hash in filter.get_new_entries():
+    block = w3.eth.getBlock(bk_hash,True)
+    for tx in block.transactions:
+      print('tx data => {0}'.format(tx.input))
+  time.sleep(2)
+```
+
+`getBlock()`方法的第二个参数用来声明是否需要返回完整的交易对象， 如果设置为false将仅返回交易的哈希。
+
+## 监听代交易事件
+
