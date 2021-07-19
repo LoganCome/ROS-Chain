@@ -31,7 +31,7 @@ ganache虽然不是一个真正的以太坊节点软件， 但它完整实现了
 以太坊JSON RPC并没有规定传输层的实现，不过大部分节点都会实现HTTP和IPC的访问。因此 我们可以使用命令行工具`curl`来测试这个接口：
 
 ```
-~$ curl -X POST http://localhost:845  -d '{
+~$ curl -X POST http://localhost:8545  -d '{
 > "jsonrpc": "2.0",
 > "method": "web3_clientVersion",
 > "params": [],
