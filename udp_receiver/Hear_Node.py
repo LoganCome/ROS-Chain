@@ -16,7 +16,7 @@ def load_via_artifact(w3, contract):
 
 def Recv():
     Udp_Socket = socket(AF_INET,SOCK_DGRAM)
-    Udp_Socket.bind(("192.168.1.101",8848))
+    Udp_Socket.bind(("192.168.1.102",8848))
     w3 = Web3(Web3.HTTPProvider('http://localhost:8545'))
     accounts = w3.eth.accounts
     token = load_via_artifact(w3, 'Robotchain')
@@ -37,8 +37,9 @@ def Recv():
         token.functions.setPosition(tar_x,tar_y).transact({'from': accounts[0]})
         token.functions.setVel(0).transact({'from': accounts[0]})
 
-        tx = token.functions.getOwnPosition().transact({'from': accounts[0]})
+        (tx,ty) = token.functions.getOwnPosition().call({'from': accounts[0]})
         print(tx)
+        print(ty)
         # print (Recv_msg)
         # while 1:
         #     print(Recv_msg)

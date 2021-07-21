@@ -1,5 +1,5 @@
 pragma solidity ^0.4.21;
-
+// pragma experimental ABIEncoderV2;
 contract RobotChainContract {
     //机器人数量
     int public RobotCount;
@@ -30,14 +30,16 @@ contract RobotChainContract {
         RobotCount = robotCount;
     }
 
+    function getRobot() public view returns(address r){
+        return robot_storage[msg.sender].robotaddress;
+    }
     //机器人对象信息初始化
-    function registerRobot(int T_enode) public {
-    if (!robot_storage[msg.sender].isRegistered) {
+    function registerRobot(int T_enode) public{
+
         robot_storage[msg.sender].robotaddress = msg.sender;
         robot_storage[msg.sender].isRegistered = true;
         robot_storage[msg.sender].enode = T_enode;
         RobotCount += 1;
-    }
   }
 
     //节点状态初始化
@@ -78,6 +80,11 @@ contract RobotChainContract {
         dis = ((x-tar_x)*(x-tar_x))+((y-tar_y)*(y-tar_y));
         return dis;
     }
+
+    function printHello() public pure returns(string memory){
+        return 'hello!';
+    }
+
 
     //决定哪个去
     function decision() public view returns (int en){
