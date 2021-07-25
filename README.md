@@ -9,12 +9,12 @@
 |      |        |
 |      |        |--base_control:基本运动控制功能包
 |      |        |
-|	   |	    |--lidar:激光雷达相关功能包
+|	     |	      |--lidar:激光雷达相关功能包
 |      |        |
 |      |        |--listen_node:/odom topic监听节点功能包
 |      |        |
 |      |        |--robot_navigation:建图及导航相关功能包
-|      |	    |
+|      |	      |
 |      |        |--robot_vision:巡线、人脸识别、边缘检测等功能包
 |      |
 |      |--examples:以太坊交互相关示例代码
