@@ -4,15 +4,30 @@
   * @file    stm32f1xx_it.c
   * @brief   Interrupt Service Routines.
   ******************************************************************************
-  * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * COPYRIGHT(c) 2019 STMicroelectronics
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
@@ -23,11 +38,12 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
+extern uint8_t ucCommandSendOverFlag;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -56,17 +72,19 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern ADC_HandleTypeDef hadc1;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
-#include "itheima/common_uart.h"
+extern uint8_t ucUart1TxDMAOverFlag;
+extern UART_HandleTypeDef huart3;
 /* USER CODE END EV */
 
 /******************************************************************************/
-/*           Cortex-M3 Processor Interruption and Exception Handlers          */
+/*           Cortex-M3 Processor Interruption and Exception Handlers          */ 
 /******************************************************************************/
 /**
   * @brief This function handles Non maskable interrupt.
@@ -207,7 +225,11 @@ void SysTick_Handler(void)
 void DMA1_Channel4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
-
+	if(__HAL_DMA_GET_FLAG(&hdma_usart1_tx,DMA_FLAG_TC4)){
+		__HAL_DMA_CLEAR_FLAG(&hdma_usart1_tx,DMA_FLAG_TC4);
+		HAL_UART_AbortTransmit(&huart1);
+		ucUart1TxDMAOverFlag = 1;
+	}
   /* USER CODE END DMA1_Channel4_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart1_tx);
   /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
@@ -225,22 +247,50 @@ void DMA1_Channel5_IRQHandler(void)
   /* USER CODE END DMA1_Channel5_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart1_rx);
   /* USER CODE BEGIN DMA1_Channel5_IRQn 1 */
-
+//	printf("DMA 15 IRQ\r\n");
   /* USER CODE END DMA1_Channel5_IRQn 1 */
 }
 
 /**
-  * @brief This function handles ADC1 and ADC2 global interrupts.
+  * @brief This function handles TIM1 update interrupt.
   */
-void ADC1_2_IRQHandler(void)
+void TIM1_UP_IRQHandler(void)
 {
-  /* USER CODE BEGIN ADC1_2_IRQn 0 */
+  /* USER CODE BEGIN TIM1_UP_IRQn 0 */
 
-  /* USER CODE END ADC1_2_IRQn 0 */
-  HAL_ADC_IRQHandler(&hadc1);
-  /* USER CODE BEGIN ADC1_2_IRQn 1 */
+  /* USER CODE END TIM1_UP_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_UP_IRQn 1 */
 
-  /* USER CODE END ADC1_2_IRQn 1 */
+  /* USER CODE END TIM1_UP_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM4 global interrupt.
+  */
+void TIM4_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM4_IRQn 0 */
+
+  /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
+  /* USER CODE BEGIN TIM4_IRQn 1 */
+
+  /* USER CODE END TIM4_IRQn 1 */
 }
 
 /**
@@ -249,26 +299,50 @@ void ADC1_2_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	uint32_t uiTemp = 0;
+	uint16_t usTempLen = 0;
+	if(__HAL_UART_GET_FLAG(&huart1,UART_FLAG_IDLE) != RESET){
 
+		HAL_UART_AbortReceive(&huart1);
+		__HAL_UART_CLEAR_IDLEFLAG(&huart1);
+
+		uiTemp = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+
+		usTempLen = UART_RX_BUF_SIZE - uiTemp;
+		if(UART_RX_BUF_SIZE>=ucUart1RxBufLen+usTempLen){
+			memcpy(pucUart1RxBufCache+ucUart1RxBufLen,pucUart1RxBuf,usTempLen);
+			ucUart1RxBufLen += usTempLen;		
+		}
+		if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+		ucUartRecvEndCounter++;
+		HAL_UART_Receive_DMA(&huart1,pucUart1RxBuf,UART_RX_BUF_SIZE);
+	}
+//	else if(__HAL_UART_GET_FLAG(&huart1,UART_FLAG_TC) != RESET){
+//		HAL_GPIO_TogglePin(LED_RED_GPIO_Port,LED_RED_Pin);
+//		ucCommandSendOverFlag =1;
+//	}
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-    common_uart_idle_handle(&huart1);
+
   /* USER CODE END USART1_IRQn 1 */
 }
 
 /**
-  * @brief This function handles USART2 global interrupt.
+  * @brief This function handles EXTI line[15:10] interrupts.
   */
-void USART2_IRQHandler(void)
+void EXTI15_10_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART2_IRQn 0 */
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
 
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
-  /* USER CODE END USART2_IRQn 1 */
+  /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

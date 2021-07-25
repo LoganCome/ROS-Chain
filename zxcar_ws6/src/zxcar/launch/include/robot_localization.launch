@@ -1,6 +1,0 @@
-<launch>
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_node">
-        <rosparam command="load" file="$(find zxcar)/params/robot_localization.yaml"/>
-        <remap from="odometry/filtered" to="/odom"/>
-    </node>
-</launch>

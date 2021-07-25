@@ -1,8 +1,0 @@
-prefix=/usr/local
-
-Name: zxcar_driver
-Description: Description of zxcar_driver
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

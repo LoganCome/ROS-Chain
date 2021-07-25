@@ -1,7 +1,0 @@
-<launch>
-    <node pkg="imu_calib" type="apply_calib" name="apply_calib" output="screen">
-        <param name="calib_file" value="$(find zxcar)/params/imu_calib.yaml"/>
-        <param name="calibrate_gyros" value="true"/>
-        <param name="gyro_calib_samples" value="100"/>
-    </node>
-</launch>

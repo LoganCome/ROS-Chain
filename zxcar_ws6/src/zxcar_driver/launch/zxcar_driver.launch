@@ -1,6 +1,0 @@
-<launch>
-    <node pkg="zxcar_driver" type="zxcar_driver.py" name="zxcar_driver" output="screen">
-         <param name="port" value="/dev/zxcar"/>
-         <param name="baudrate" value="115200" />
-    </node>
-</launch>

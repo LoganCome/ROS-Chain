@@ -1,0 +1,8 @@
+prefix=/home/zsh/catkin_ws/src/listen_node/cmake-build-debug/devel
+
+Name: listen_node
+Description: Description of listen_node
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
