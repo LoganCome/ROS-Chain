@@ -9,13 +9,16 @@
 |      |        |
 |      |        |--base_control:基本运动控制功能包
 |      |        |
-|	     |	      |--lidar:激光雷达相关功能包
+|	   |	    |--lidar:激光雷达相关功能包
 |      |        |
 |      |        |--listen_node:/odom topic监听节点功能包
 |      |        |
 |      |        |--robot_navigation:建图及导航相关功能包
-|      |	      |
+|      |	    |
 |      |        |--robot_vision:巡线、人脸识别、边缘检测等功能包
+|      |        |
+|      |        |--multi_robot:机器人集群控制
+|      |
 |      |
 |      |--examples:以太坊交互相关示例代码
 |      |
@@ -99,6 +102,8 @@ python以太坊交互笔记施工完毕，请放心食用~:cheese:
 3、Robot_1.py(udp_sender下)：机器人1的数据接收以及中转
 
 4、Robot_2.py(udp_sender下)：机器人2的数据接收以及中转
+
+5、multi_robot(ros节点下)：机器人集群控制功能包
 
 此外还在原来的代码中重写了详细的注释，并规范了代码的格式~~~
 
