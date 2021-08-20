@@ -1,5 +1,54 @@
 [
 	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"name": "Tranc_info",
+		"outputs": [
+			{
+				"name": "x",
+				"type": "int256"
+			},
+			{
+				"name": "y",
+				"type": "int256"
+			},
+			{
+				"name": "isdone",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "eno",
+				"type": "int256"
+			},
+			{
+				"name": "x",
+				"type": "int256"
+			},
+			{
+				"name": "y",
+				"type": "int256"
+			}
+		],
+		"name": "Tranc_stor",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"constant": false,
 		"inputs": [
 			{
@@ -66,6 +115,10 @@
 			{
 				"name": "vel",
 				"type": "int256"
+			},
+			{
+				"name": "isonjob",
+				"type": "bool"
 			}
 		],
 		"payable": false,
@@ -160,6 +213,20 @@
 		"type": "function"
 	},
 	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "i",
+				"type": "int256"
+			}
+		],
+		"name": "Tranc_status",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"constant": true,
 		"inputs": [],
 		"name": "printHello",
@@ -174,7 +241,7 @@
 		"type": "function"
 	},
 	{
-		"constant": true,
+		"constant": false,
 		"inputs": [],
 		"name": "decision",
 		"outputs": [
@@ -184,7 +251,7 @@
 			}
 		],
 		"payable": false,
-		"stateMutability": "view",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{

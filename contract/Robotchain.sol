@@ -19,10 +19,18 @@ contract RobotChainContract {
         int _x;
         int _y;
         int vel;
+        bool isonjob;
+    }
+
+    struct Tranc{
+        int x;
+        int y;
+        bool isdone;
     }
 
     mapping(address => Robot) public robot_storage;
     mapping(int => Robot_data) public robot_data;
+    mapping(int => Tranc) public Tranc_info;
 
     constructor(
         int robotCount
@@ -39,6 +47,7 @@ contract RobotChainContract {
         robot_storage[msg.sender].robotaddress = msg.sender;
         robot_storage[msg.sender].isRegistered = true;
         robot_storage[msg.sender].enode = T_enode;
+        robot_data[robot_storage[msg.sender].enode].isonjob = false;
         RobotCount += 1;
   }
 
@@ -85,23 +94,44 @@ contract RobotChainContract {
         return 'hello!';
     }
 
+    function Tranc_stor(int eno,int x,int y) public {
+        Tranc_info[eno].x = x;
+        Tranc_info[eno].y = y;
+        Tranc_info[eno].isdone = false;
+    }
+
+    function Tranc_status(int i) public {
+        robot_data[i].isonjob = false;
+    }
 
     //决定哪个去
-    function decision() public view returns (int en){
-        int dicision = 0;
+    function decision() public returns(int en){
+        int dicision = 1;
         int count = 1;
+        int Tranc_count = 1;
         int MAX = 8000000;
         int tmp_dis;
         while(count<RobotCount){
-            tmp_dis = Calucate(robot_data[count]._x,robot_data[count]._y,50,50);
-            if(tmp_dis < MAX){
-                dicision = count;
-                MAX = tmp_dis;
-                count += 1;
+            if(Tranc_info[Tranc_count].isdone = false){
+                if(robot_data[count].isonjob = false){
+                tmp_dis = Calucate(robot_data[count]._x,robot_data[count]._y,Tranc_info[Tranc_count].x,Tranc_info[Tranc_count].y);
+                if(tmp_dis < MAX){
+                    dicision = count;
+                    MAX = tmp_dis;
+                    count += 1;
+                }else if(count < RobotCount){
+                    count += 1;
+                }else{
+                    Tranc_info[Tranc_count].isdone = true;
+                    robot_data[dicision].isonjob = true;
+                    return dicision;
+                }
+           }else{
+               count += 1;
+                }
             }else{
-                count += 1;
+                Tranc_count += 1;
             }
         }
-        return count;
     }
 }
