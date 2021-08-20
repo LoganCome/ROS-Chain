@@ -50,13 +50,15 @@ def data_on_chain(name):
     while True:
         #获取数据
         x,y = data_obtain(name)
+        x = int(x)
+        y = int(y)
         #调用链上方法，设置机器人位置信息
         token.functions.setPosition(x,y).transact({'from': accounts[Robot[name]]})
         #获取链上机器人位置
         (tx, ty) = token.functions.getOwnPosition().call({'from': accounts[0]})
         cur_time = time.time()
         #打印
-        print("Current_Time: "+cur_time+", and the cur position is :"+tx+", "+ty)
+        print("Current_Time: "+str(cur_time)+", and the cur position is :"+str(tx)+", "+str(ty))
 
 if  __name__ == "__main__":
     data_on_chain(Robot_1_name)
