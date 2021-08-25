@@ -6,7 +6,6 @@
 """
 基于以太坊的无人车只能调度模型
 Redis缓存
-
 说明：由于ROS pub信息的速率过高，而强制降低消息发送速率会影响底盘信息调制。
 从而影响建图、导航等相关功能
 因此做一层缓存，将数据存储到redis中去，并且手动进行去重存储
@@ -60,7 +59,7 @@ def Recv_data_from_Robot_1():
     #创建socket
     Udp_Socket = socket(AF_INET, SOCK_DGRAM)
     #绑定端口
-    Udp_Socket.bind(("192.168.1.118", Robot_1_port))
+    Udp_Socket.bind(("192.168.1.101", Robot_1_port))
     #线程执行任务
     while thread_on:
         #接受端口发送的数据
@@ -79,7 +78,7 @@ def Recv_data_from_Robot_1():
 #机器人2端口监听
 def Recv_data_from_Robot_2():
     Udp_Socket = socket(AF_INET, SOCK_DGRAM)
-    Udp_Socket.bind(("192.168.1.118", Robot_2_port))
+    Udp_Socket.bind(("192.168.1.101", Robot_2_port))
     while 1:
         Recv_Data = Udp_Socket.recvfrom(1024)
         Recv_msg = Recv_Data[0].decode('utf-8')
@@ -95,15 +94,12 @@ def data_process(x, y, name):
     #建立redis连接
     r = redis.Redis(host=host, port=port, decode_responses=True)
 
-    temp_x = int(r.brpop(name + "_x")[1])
-    temp_y = int(r.brpop(name + "_y")[1])
+    temp_x = int(r.lindex(name + "_x", r.llen(name + "_x") - 1))
+    temp_y = int(r.lindex(name + "_y", r.llen(name + "_y") - 1))
     #比较此时拿到的数据和list中上一个数据新型比对，若相同则不入库，否则append到末尾
     if x == temp_x and y == temp_y:
-        r.rpush(name + "_x", temp_x)
-        r.rpush(name + "_y", temp_y)
+        pass
     else:
-        r.rpush(name + "_x", temp_x)
-        r.rpush(name + "_y", temp_y)
         r.rpush(name + "_x", x)
         r.rpush(name + "_y", y)
         print("insert successfully")
@@ -117,8 +113,6 @@ def data_obtain(name):
     #获取list中最新的信息
     x = r.lindex(name + "_x", length - 1)
     y = r.lindex(name + "_y", length - 1)
-    r.brpop(name + "_x")
-    r.brpop(name + "_y")
 
     return x,y
 

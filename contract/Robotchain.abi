@@ -1,6 +1,42 @@
 [
 	{
 		"constant": true,
+		"inputs": [],
+		"name": "getenode",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "Get_Tranc",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int256"
+			},
+			{
+				"name": "",
+				"type": "int256"
+			},
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
 		"inputs": [
 			{
 				"name": "",
@@ -63,6 +99,20 @@
 		"type": "function"
 	},
 	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "i",
+				"type": "int256"
+			}
+		],
+		"name": "change_robot_status",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"constant": true,
 		"inputs": [],
 		"name": "getOwnPosition",
@@ -71,6 +121,20 @@
 				"name": "",
 				"type": "int256"
 			},
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "Get_num",
+		"outputs": [
 			{
 				"name": "",
 				"type": "int256"
@@ -170,6 +234,20 @@
 		"constant": false,
 		"inputs": [
 			{
+				"name": "i",
+				"type": "int256"
+			}
+		],
+		"name": "change_tranc_status",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
 				"name": "_vel",
 				"type": "int256"
 			}
@@ -246,18 +324,48 @@
 		"name": "decision",
 		"outputs": [
 			{
-				"name": "en",
+				"name": "",
+				"type": "int256"
+			},
+			{
+				"name": "",
+				"type": "int256"
+			},
+			{
+				"name": "",
+				"type": "int256"
+			},
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "Tranc_Count",
+		"outputs": [
+			{
+				"name": "",
 				"type": "int256"
 			}
 		],
 		"payable": false,
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
 				"name": "robotCount",
+				"type": "int256"
+			},
+			{
+				"name": "TrancCount",
 				"type": "int256"
 			}
 		],

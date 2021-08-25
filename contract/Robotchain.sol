@@ -3,6 +3,7 @@ pragma solidity ^0.4.21;
 contract RobotChainContract {
     //机器人数量
     int public RobotCount;
+    int public Tranc_Count;
 
     //机器人对象
     //isRegistered标识机器人是否注册
@@ -33,13 +34,19 @@ contract RobotChainContract {
     mapping(int => Tranc) public Tranc_info;
 
     constructor(
-        int robotCount
+        int robotCount,
+        int TrancCount
         )public {
         RobotCount = robotCount;
+        Tranc_Count = TrancCount;
     }
 
     function getRobot() public view returns(address r){
         return robot_storage[msg.sender].robotaddress;
+    }
+
+    function getenode() public view returns(int){
+        return robot_storage[msg.sender].enode;
     }
     //机器人对象信息初始化
     function registerRobot(int T_enode) public{
@@ -98,40 +105,50 @@ contract RobotChainContract {
         Tranc_info[eno].x = x;
         Tranc_info[eno].y = y;
         Tranc_info[eno].isdone = false;
+        Tranc_Count += 1;
     }
 
     function Tranc_status(int i) public {
         robot_data[i].isonjob = false;
     }
 
+    function Get_Tranc() public view returns(int, int,int){
+        return (Tranc_info[Tranc_Count].x,Tranc_info[Tranc_Count].y,Tranc_Count);
+
+    }
+    function Get_num() public view returns(int){
+        return RobotCount;
+    }
+    function change_robot_status(int i) public{
+        robot_data[i].isonjob = true;
+    }
+    function change_tranc_status(int i)public {
+         Tranc_info[i].isdone = true;
+    }
+
+
     //决定哪个去
-    function decision() public returns(int en){
+    function decision() public payable  returns(int,int,int,int){
         int dicision = 1;
         int count = 1;
         int Tranc_count = 1;
-        int MAX = 8000000;
-        int tmp_dis;
-        while(count<RobotCount){
-            if(Tranc_info[Tranc_count].isdone = false){
-                if(robot_data[count].isonjob = false){
-                tmp_dis = Calucate(robot_data[count]._x,robot_data[count]._y,Tranc_info[Tranc_count].x,Tranc_info[Tranc_count].y);
-                if(tmp_dis < MAX){
-                    dicision = count;
-                    MAX = tmp_dis;
-                    count += 1;
-                }else if(count < RobotCount){
-                    count += 1;
-                }else{
-                    Tranc_info[Tranc_count].isdone = true;
-                    robot_data[dicision].isonjob = true;
-                    return dicision;
-                }
-           }else{
-               count += 1;
-                }
+        int MAX = 800000000000000;
+        int tmp_dis = 0;
+        while(count<=RobotCount){
+            tmp_dis = Calucate(robot_data[count]._x,robot_data[count]._y,Tranc_info[Tranc_count].x,Tranc_info[Tranc_count].y);
+            if((tmp_dis < MAX) && (Tranc_info[Tranc_count].isdone == false) && (robot_data[count].isonjob == false)){
+                dicision = count;
+                MAX = tmp_dis;
+                count = count+1;
+            }else if(count >= RobotCount){
+                    change_tranc_status(Tranc_count);
+                    change_robot_status(count);
+
             }else{
-                Tranc_count += 1;
+                count = count+1;
             }
-        }
     }
+    return (dicision,Tranc_count,Tranc_info[Tranc_count].x,Tranc_info[Tranc_count].y);
+}
+
 }
