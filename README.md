@@ -1,132 +1,45 @@
-# Robotchain
+# ROS-Chain
 
-:haircut_man:本项目由海南大学机器人与人工智能协会区块链小组维护
+By Shenhui Zhang, Bernie Liu, Ming Tang
 
-文件结构：
+Hainan University, RobAI-Lab:robot: **&** HKUST, Hong Kong.
 
-```
-|--master
-|      |
-|      |--ros节点：项目相关ros功能包
-|      |        |
-|      |        |--base_control:基本运动控制功能包
-|      |        |
-|	   |	    |--lidar:激光雷达相关功能包
-|      |        |
-|      |        |--listen_node:/odom topic监听节点功能包
-|      |        |
-|      |        |--robot_navigation:建图及导航相关功能包
-|      |	    |
-|      |        |--robot_vision:巡线、人脸识别、边缘检测等功能包
-|      |        |
-|      |        |--multi_robot:机器人集群控制
-|      |
-|      |
-|      |--examples:以太坊交互相关示例代码
-|      |
-|      |--Inc:小车底层驱动相关头文件
-|      |
-|      |--contract:智能合约源码以及二进制文件、字节码
-|      |
-|      |--Src:小车底层驱动相关实现类及接口
-|      |
-|      |--udp_receiver:udp客户端相关源码
-|      |
-|      |--udp_sender:udp服务端相关代码
-|      |
-|      |--NaCar.ioc:驱动板烧写
-|      |
-|      |--Python and Rthereum.md：python以太坊交互学习笔记
+## :question:What is ROS-Chain​​
 
+ROS-Chain serves as a kind of interaction scheme for ROS and Ethereum in a secure and convenient way. ROS-Chain is built on SM algorithm family which includes SM2, SM3 and SM4, UDP transport protocol, Ethereum and, of course, ROS. As a user, what you need to do to get ROS-Chain works is just to input some key information(Like names of topics, your comma etc.).
+
+ROS-Chain presents a user-friendly framework that blocks the complicated implementation process of detailed interaction scheme along with a **unified Ethereum Blockchain network** reserving for interaction. Our goal is to present a kind of **Information storage and sharing media with security and flexibility** to facilitate the information communication in all ROS systems within the world. Our experiments focus on the security performance, encryption and decryption performance and stability of SM algorithm family.
+
+Thanks for the key-exchange scheme based on SM algorithm family, ROS-Chain is equipped with a complete secure encryption mechanism in the cost of a slight loss in performance. Every user has a unique identity and related interactive permissions like authority granting, information check and messages storage in the Ethereum network. Through this, every user having registered in the network can not only do the job of **persistent, tamper proof storage of critical information**, but also can conduct trusted information exchange communication with the authorization of either party of information communication, out of the intervention of third party.
+
+## :hammer_and_wrench: How to use
+
+#### Step :one:: Set up ROS and related environments
+
+ROS-Chain is used for robots build upon `ROS Melodic`, so please set up `ROS Melodic` in `Ubuntu18.04` and put the `listen_node` in the repo to your local catkin workspace. Also you need to prepare the environment of `gcc` ,  `g++`  & `python 3.6+` well and run `catkin_make` to compile your workspace. If you have no idea about that, this [blog](https://blog.csdn.net/weixin_42108484/article/details/83021957) is a good start and for the python, we suggest you use the [anaconda3](https://www.anaconda.com/).
+
+#### Step :two:: Run it!  
+
+Run the `console.py` in the `listen_node` in the repo. For the first use, you need to upload your **SM4 key** which is used to encrypt your ROS messages. And please choose one of the **SM2 public key** in the `keys.txt` file which is used to encrypt your SM4 key when the program need you to input.
+
+```python
+python console.py
 ```
 
-## 技术方案
+After that, there will be an interaction to define nodes whose information you want to push to  Blockchain.
 
-1、视觉+激光双slam：采用激光雷达结合slam技术对封闭实验环境进行建图。在确定集群中执行交易的子节点后，开启节点摄像头，利用地图信息动态结合所处环境位置信息实现避障、自动导航等功能。
+#### Step :three:: Check the topic
 
-2、智能路径规划：集群内单个节点采用TEB（Timed-Elastic-band）路径规划算法。行进过程中，结合视觉环境信息动态调整位姿朝向。算法执行流程如下图所示
+You can run the command below and check the working status of the nodes on your PC.
 
-3、ROS环境和外部环境通信机制：由于ROS环境内的节点信息对外部环境完全隔离，为此我们设计了一套基于UDP的ROS环境对外通信机制。指定ros节点内向维护位置信息的topic发送数据的publisher的queue_size属性值、发送频率，同时，在UDP服务端对相同的topic进行消息队列订阅，指定subscriber的queue_size、buffer_size属性，确保订阅到的消息总是最新的消息，消除了消息队列过长所引起的队列爆炸、消息订阅时延过高等问题。同时指定消息发送端口。在Ethereum区块链网络外部接口调用层内嵌UDP数据客户端，对服务端消息发送的端口进行监听，获取到信息后解码，提取有用的节点坐标、速度信息，再调用接口上链。
+```
+rostopic list
+```
 
-4、Ethereum网络集群调度：采用ganache工具快速启动ethereum区块链测试网络，并为集群中每个节点指定account。同时部署自主开发的智能合约，在小车位置、速度、航向信息发送至区块链网络后，将调用智能合约内相关算法，通过POA机制选举出最优交易执行节点，实现智能集群调度。完全隔离任何其他形式的第三方集群调度方式，确保调度方案的公正性以及信息处理过程中的安全性。
+## :bookmark_tabs:Release Plan
 
-## 部署细节
+ROS-Chain is still in the process of testing and revisions of codes. In mid-Dec, we will have official version released in **mid-Dec**.
 
-待完善....
+## :email:Contact Us​
 
-## 2021.7.12:alien:
-
-更新了底层驱动hex文件
-
-更新了上位机相关功能包
-
----------------------------------------分割线----------------------------------------
-
-## 2021.7.16:point_down:
-
-:black_flag:` 重磅更新`:checkered_flag:
-
-**python以太坊交互方式 持续施工中~**:ok_man:
-
----------------------------------------分割线----------------------------------------
-
-## 2021.7.19:raised_hands:
-
-python以太坊交互笔记施工完毕，请放心食用~:cheese:
-
-更新了udp_receiver、udp_sender相关功能包
-
-更新了python以太坊交互示例代码
-
----------------------------------------分割线----------------------------------------
-
-## 2021.7.23:person_fencing:
-
-更新了ros节点
-
-更新了ioc文件
-
----------------------------------------分割线----------------------------------------
-
-## 2021.8.19:panda_face:
-
-由于ROS pub信息的速率过高，而强制降低消息发送速率会影响底盘信息调制。
-从而影响建图、导航等相关功能
-因此做一层缓存，将数据存储到redis中去，并且手动进行去重存储
-这样不仅能规避消息发送速率过高的负面影响，而且可以保证区块上记录的信息为最新的信息，有效降低区块链负载
-
-**更新**：:ice_cream:
-
-1、redis_flush.py(udp_receiver下)：整合udp数据接受功能，并对数据进行手动去重加载进redis中
-
-2、Hear_node.py(udp_receiver下)：更新了udp客户端的部分代码，将部分功能抽离到redis缓存层中
-
-3、Robot_1.py(udp_sender下)：机器人1的数据接收以及中转
-
-4、Robot_2.py(udp_sender下)：机器人2的数据接收以及中转
-
-5、multi_robot(ros节点下)：机器人集群控制功能包
-
-此外还在原来的代码中重写了详细的注释，并规范了代码的格式~~~
-
-请放心食用:open_mouth:
-
----------------------------------------分割线----------------------------------------
-
-## 2021.8.20:dove:
-
-更新了部分Redis缓存的Bug
-
-***更新了智能合约***
-
-合约现在支持交易信息存储
-
-同时优化了交易执行的方案
-
-## 2021.8.26:page_facing_up:
-
-更新了智能合约：***加入了小车工作状态标记，交易信息存储，交易状态标记***，***优化了交易执行节点的判定方案***
-
-更新了监听节点Hear_node(udp_receiver下)：***现在具有交易信息上链、交易信息处理功能***
-
-加入了Tranc_Control（udp_sender下）：***交易信息下行操作管理模块，将交易执行结果反馈并最终体现到区块链上***
+If you have any concerns here, please post as Github issues, or send an e-mail to Shenhui Zhang by freak01716@163.com; o0freak0o01716@gmail.com.
