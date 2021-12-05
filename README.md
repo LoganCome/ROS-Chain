@@ -49,7 +49,7 @@ Next, you shall install and configure Redis in your PC properly. Please refer to
 
 #### Step :two:: Run it!  
 
-For the first use, you shall run `register.py`  to upload your **SM4 key** which is used to encrypt your ROS messages. And please choose one of the **SM2 public key** in the `keys.txt` file which is used to encrypt your SM4 key when the program need you to input.
+For the first use, you shall run `register.py`  to upload your **SM4 key** which is used to encrypt your ROS messages. And please choose one of the **SM2 public key** in the `SM2_keys.txt` file which is used to encrypt your SM4 key when the program need you to input.
 
 ```python
 python register.py
