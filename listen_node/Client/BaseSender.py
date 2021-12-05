@@ -5,8 +5,8 @@ import socket
 from socket import *
 from abc import ABCMeta,abstractmethod
 
-class Client(object,metaclass=ABCMeta):
-
+class Client():
+    __metaclass__ = ABCMeta
     __slots__ = ('_ip','_port')
     def __init__(self,ip,port):
         # local_addr = (scripts.v4.pyargs.MASTER_IP, 9090)

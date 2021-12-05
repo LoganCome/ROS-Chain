@@ -5,7 +5,7 @@ class Cache(object):
         self._num = num
         self._cache = []
         for i in range(self._num):
-            self._cache[i] = queue(1024*100)
+            self._cache.append(queue(1024*100))
 
     @property
     def num(self):
@@ -15,4 +15,5 @@ class Cache(object):
         self._num = num
 
     def append(self):
-        self._cache.append(queue(1024*10))
+        self._cache.append(queue(1024*100))
+        self._num += 1

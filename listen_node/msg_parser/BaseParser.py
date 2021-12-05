@@ -5,10 +5,11 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import CompressedImage
 
-class BaseParser(object,metaclass=ABCMeta):
+class BaseParser(object):
     """
     Base class of Parsers
     """
+    __metaclass__ = ABCMeta
     __slots__ = ('_type','_enc_method')
 
     def __init__(self,type,enc_method='SM4'):

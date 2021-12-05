@@ -8,7 +8,7 @@ class TCP_Client(Client):
     def __init__(self,ip,port):
         Client.__init__(ip=ip,port=port)
         self._tcp_socket = socket(AF_INET,SOCK_DGRAM)
-        self._tcp_socket.settimeout(60)
+        self._tcp_socket.settimeout(180)
 
 
     def connection_establish(self):

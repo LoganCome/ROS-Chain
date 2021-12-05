@@ -1,13 +1,12 @@
-from abc import ABCMeta,abstractmethod
-from scripts.v4.circle_queue import queue
+import rospy
+from callbacks import Odometry_callback_func,Connect_redis
+class BaseNode(object):
 
-class BaseNode(object,metaclass=ABCMeta):
-
-    __slots__ = ('_topic','_types','_node_name')
-    def __init__(self,topic,node_name):
-        self._node_name = node_name
-        self._topic = topic
-        self._types = ''
+    # __slots__ = ('_topic','_types','_node_name')
+    def __init__(self,topics,node_names,types):
+        self._node_name = node_names
+        self._topic = topics
+        self._types = types
         # for i in range(4):
         #     self._cache.append(queue())
 
@@ -44,6 +43,16 @@ class BaseNode(object,metaclass=ABCMeta):
     # def pack_send_TCP(self):
     #     pass
 
-    @abstractmethod
-    def monitor(self,cache):
-        pass
+    def monitor(self):
+        r = Connect_redis(self._types)
+        rospy.init_node(self._node_name)
+        rate = rospy.Rate(0.1)
+        while not rospy.is_shutdown():
+            for i in range(len(self._topic)):
+                call_name = str(self._types[i])+'_callback_func'
+                rospy.Subscriber(self._topic[i],self._types[i],callback=call_name,callback_args=(r,self._topic[i]),queue_size=10,buff_size=52428800)
+            # rospy.Subscriber(self._topic,Odometry,callback=Odom_callback_func,callback_args=(cache,str(self._topic)),queue_size=10,buff_size=52428800)
+                rate.sleep()
+
+    def stop(self):
+        rospy.signal_shutdown('user oper.')
