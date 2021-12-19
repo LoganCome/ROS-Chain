@@ -1,8 +1,12 @@
-# ROS-Chain
+# ROS-Chain（Easy_use）
 
 By Shenhui Zhang, Bernie Liu, Ming Tang
 
 Hainan University, RobAI-Lab:robot: **&** HKUST, Hong Kong.
+
+## NOTIFICATION
+
+**This is a brief version of ROS chain, which is easy to use and test the basic functions of ROS chain. At present, this version only supports the related functions / operations of odometry type messages.**
 
 ## :question:What is ROS-Chain​​
 
@@ -14,66 +18,79 @@ Thanks for the key-exchange scheme based on SM algorithm family, ROS-Chain is eq
 
 ## :hammer_and_wrench: How to use
 
-#### Step :one:: Set up ROS and related environments
+#### Step :one::  Prepare ROS and run envs
 
-ROS-Chain is used for robots build upon `ROS Melodic`, so please set up `ROS Melodic` in `Ubuntu18.04` and put the `listen_node` in the repo to your local catkin workspace. And since `Python 2.7` comes with `Ubuntu 18.04`  without Redis module, you may need to install it manually like this:
-
-```shell
-pip install redis -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-While I suggest you open the `listen_node` in your catkin workspace through **Clion**, fixing the python interpreter to `python2.7` in the `/usr/bin` and run the following commands in the terminal of **Clion**:
+ROS-Chain is used for robots build upon `ROS Melodic` and related codes are run in `Anaconda3` envs along with `redis`. To prepare envs, you should prepare two virtual python envs, one in `pthon2.7` and the other in `python3.8`. And for the redis setup, please refer to [this](https://redis.io/download).
 
 ```shell
-apt install python-pip
-pip install redis -i https://pypi.tuna.tsinghua.edu.cn/simple
+conda activate -n py2 python=2.7
+conda activate -n py3 python=3.8
 ```
 
-and run `catkin_make` to compile your workspace:
+Then, you should set up `redis` module in the two virtual envs.
+
+```shell
+conda activate py2
+conda install redis redis-py
+conda activate py3
+conda install redis redis-py
+```
+
+#### Step :two::  compile your workspace
+
+Cloning the codes and move the file `listen_node` to your `src` of your workspace and run the following commands:
 
 ```shell
 catkin_make
 ```
 
-Then you need to add the path of your catkin workspace to the `bashrc`  like this:
+And export the path of your workspace to the `~/.bashrc`:
 
 ```shell
-vim ~/.bashrc
+sudo vim ~/.bashrc
 :i
-export CATKIN_WS=/home/zsh/catkin_ws
+export CATKIN_WS=/...
 :wq
 source ~/.bashrc
 ```
 
-Next, you shall install and configure Redis in your PC properly. Please refer to the [Redis official](https://redis.io/). Also you need to prepare the environment of `gcc` ,  `g++`  & `python 3.6+` well. If you have no idea about that, this [blog](https://blog.csdn.net/weixin_42108484/article/details/83021957) is a good start and for the python, we suggest you use the [anaconda3](https://www.anaconda.com/).
+#### Step :three::  Register your identity
 
-#### Step :two:: Run it!  
-
-For the first use, you shall run `register.py`  to upload your **SM4 key** which is used to encrypt your ROS messages. And please choose one of the **SM2 public key** in the `SM2_keys.txt` file which is used to encrypt your SM4 key when the program need you to input.
-
-```python
-python register.py
-```
-
-Run the `console.py` in the `listen_node` in the repo.
+To register the identity, please run the following codes ($catkin_ws is the location of your workspace):
 
 ```shell
-python console.py
+cd $catkin_ws/src/listen_node/scripts/v2/register
+conda activate py3
+python easy_register.py
 ```
 
-After that, there will be an interaction to define nodes whose information you want to push to  Blockchain.
+And follow the instructions.
 
-#### Step :three:: Check the topic
+#### Step :four::  Assign the topics and start monitoring
 
-You can run the command below and check the working status of the nodes on your PC.
+Run the following codes to initialize the variables:
 
+```shell
+cd $catkin_ws/src/listen_node/scripts/v2
+conda activate py3
+python easy_console
 ```
-rostopic list
+
+When you enter the topics and message types, you can run the following codes to start monitoring. But, before you start monitoring, please make sure that **the `redis` module runs normally**.
+
+```shell
+cd $catkin_ws/src/listen_node/scripts/v2
+conda activate py2
+python Monitor.py
 ```
+
+#### Step :five::  Assign the topics and start monitoring
+
+Finally, after the capturing of the wanted messages, you can switch the **terminal of step 4** to begin the interaction with Ethereum launched on the server by enter **`1`** and check the info on the chain by enter **`2`**.
 
 ## :bookmark_tabs:Release Plan
 
-ROS-Chain is still in the process of testing and revisions of codes. In mid-Jan, 2022, we will have official version released.
+ROS-Chain is still in the process of testing and revisions of codes. In mid-Feb, 2022, we will have final version released.
 
 ## :email:Contact Us​
 

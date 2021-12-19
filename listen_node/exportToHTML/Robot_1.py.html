@@ -1,0 +1,153 @@
+<html>
+<head>
+<title>Robot_1.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+.s3 { color: #067d17;}
+.s4 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Robot_1.py</font>
+</center></td></tr></table>
+<pre><span class="s0">#! /usr/bin/env python</span>
+<span class="s0"># coding: utf-8</span>
+
+<span class="s2">import </span><span class="s1">rospy</span>
+<span class="s2">import </span><span class="s1">time</span>
+<span class="s2">from </span><span class="s1">geometry_msgs.msg </span><span class="s2">import </span><span class="s1">PoseWithCovarianceStamped</span>
+<span class="s2">from </span><span class="s1">nav_msgs.msg </span><span class="s2">import </span><span class="s1">Odometry</span>
+<span class="s2">from </span><span class="s1">socket </span><span class="s2">import </span><span class="s1">*</span>
+
+<span class="s1">Master_URI = </span><span class="s3">'192.168.1.122'</span>
+
+
+<span class="s2">class </span><span class="s1">Robot_1_SendMSG(object):</span>
+
+    <span class="s2">def </span><span class="s1">__init__(self,ip,port):</span>
+        <span class="s1">local_addr = (Master_URI,</span><span class="s4">9090</span><span class="s1">)</span>
+        <span class="s1">self.ip = ip</span>
+        <span class="s1">self.port = port</span>
+        <span class="s1">self.udp_socket = socket(AF_INET,SOCK_DGRAM)</span>
+        <span class="s1">self.udp_socket.bind(local_addr)</span>
+        <span class="s1">self.dest_addr = (ip,port)</span>
+
+    <span class="s2">def </span><span class="s1">send_msg(self,msg):</span>
+        <span class="s1">send_data = msg</span>
+        <span class="s1">self.udp_socket.sendto(send_data.encode(</span><span class="s3">'utf-8'</span><span class="s1">),self.dest_addr)</span>
+        <span class="s1">self.udp_socket.close()</span>
+
+
+
+<span class="s2">def </span><span class="s1">robot_1_topic_callback2(msg):</span>
+    <span class="s0"># ip='192.168.1.107'</span>
+    <span class="s1">port = </span><span class="s4">8848</span>
+    <span class="s2">if not </span><span class="s1">isinstance(msg,Odometry):</span>
+        <span class="s2">return</span>
+    <span class="s2">print </span><span class="s1">(</span><span class="s3">&quot;-----------------&quot;</span><span class="s1">)</span>
+    <span class="s1">tmp_x = </span><span class="s4">0</span>
+    <span class="s1">tmp_y = </span><span class="s4">0</span>
+    <span class="s1">_x = msg.pose.pose.position.x</span>
+    <span class="s1">_y =  msg.pose.pose.position.y</span>
+    <span class="s1">vel_x = msg.twist.twist.linear.x</span>
+    <span class="s1">vel_y = msg.twist.twist.linear.y</span>
+    <span class="s2">print </span><span class="s1">(vel_y)</span>
+    <span class="s2">print </span><span class="s1">(vel_x)</span>
+
+    <span class="s1">_x = _x * </span><span class="s4">1000</span>
+    <span class="s1">_y = _y * </span><span class="s4">1000</span>
+
+    <span class="s1">_x = int(_x)</span>
+    <span class="s1">_y = int(_y)</span>
+    <span class="s2">if </span><span class="s1">_x == </span><span class="s4">0 </span><span class="s2">and </span><span class="s1">_y == </span><span class="s4">0</span><span class="s1">:</span>
+        <span class="s2">pass</span>
+    <span class="s2">elif </span><span class="s1">tmp_x == _x </span><span class="s2">and </span><span class="s1">tmp_y == _y:</span>
+        <span class="s2">pass</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">tmp_x = _x</span>
+        <span class="s1">tmp_y = _y</span>
+        <span class="s1">str_x = str(_x)</span>
+        <span class="s1">str_y = str(_y)</span>
+        <span class="s1">res = str_x+</span><span class="s3">&quot;+&quot;</span><span class="s1">+str_y</span>
+        <span class="s1">udp = Robot_1_SendMSG(ip=Master_URI,port=port)</span>
+        <span class="s1">udp.send_msg(res)</span>
+
+        <span class="s2">print </span><span class="s1">_x</span>
+        <span class="s2">print </span><span class="s1">_y</span>
+        <span class="s0"># print res</span>
+        <span class="s2">print </span><span class="s1">(</span><span class="s3">&quot;+++++++++++++++++&quot;</span><span class="s1">)</span>
+
+<span class="s2">class </span><span class="s1">Robot_2_SendMSG(object):</span>
+
+    <span class="s2">def </span><span class="s1">__init__(self,ip,port):</span>
+        <span class="s1">local_addr = (Master_URI,</span><span class="s4">9091</span><span class="s1">)</span>
+        <span class="s1">self.ip = ip</span>
+        <span class="s1">self.port = port</span>
+        <span class="s1">self.udp_socket = socket(AF_INET,SOCK_DGRAM)</span>
+        <span class="s1">self.udp_socket.bind(local_addr)</span>
+        <span class="s1">self.dest_addr = (ip,port)</span>
+
+    <span class="s2">def </span><span class="s1">send_msg(self,msg):</span>
+        <span class="s1">send_data = msg</span>
+        <span class="s1">self.udp_socket.sendto(send_data.encode(</span><span class="s3">'utf-8'</span><span class="s1">),self.dest_addr)</span>
+        <span class="s1">self.udp_socket.close()</span>
+
+
+
+<span class="s2">def </span><span class="s1">robot_2_topic_callback2(msg):</span>
+    <span class="s0"># ip='192.168.1.107'</span>
+    <span class="s1">port = </span><span class="s4">8849</span>
+    <span class="s2">if not </span><span class="s1">isinstance(msg,Odometry):</span>
+        <span class="s2">return</span>
+    <span class="s2">print </span><span class="s1">(</span><span class="s3">&quot;-----------------&quot;</span><span class="s1">)</span>
+    <span class="s1">tmp_x = </span><span class="s4">0</span>
+    <span class="s1">tmp_y = </span><span class="s4">0</span>
+    <span class="s1">_x = msg.pose.pose.position.x</span>
+    <span class="s1">_y =  msg.pose.pose.position.y</span>
+
+    <span class="s1">_x = _x * </span><span class="s4">1000</span>
+    <span class="s1">_y = _y * </span><span class="s4">1000</span>
+
+    <span class="s1">_x = int(_x)</span>
+    <span class="s1">_y = int(_y)</span>
+    <span class="s2">if </span><span class="s1">_x == </span><span class="s4">0 </span><span class="s2">and </span><span class="s1">_y == </span><span class="s4">0</span><span class="s1">:</span>
+        <span class="s2">pass</span>
+    <span class="s2">elif </span><span class="s1">tmp_x == _x </span><span class="s2">and </span><span class="s1">tmp_y == _y:</span>
+        <span class="s2">pass</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">tmp_x = _x</span>
+        <span class="s1">tmp_y = _y</span>
+        <span class="s1">str_x = str(_x)</span>
+        <span class="s1">str_y = str(_y)</span>
+        <span class="s1">res = str_x+</span><span class="s3">&quot;+&quot;</span><span class="s1">+str_y</span>
+        <span class="s1">udp = Robot_1_SendMSG(ip=Master_URI,port=port)</span>
+        <span class="s1">udp.send_msg(res)</span>
+
+        <span class="s2">print </span><span class="s1">_x</span>
+        <span class="s2">print </span><span class="s1">_y</span>
+        <span class="s0"># print res</span>
+        <span class="s2">print </span><span class="s1">(</span><span class="s3">&quot;+++++++++++++++++&quot;</span><span class="s1">)</span>
+
+<span class="s2">if </span><span class="s1">__name__ == </span><span class="s3">'__main__'</span><span class="s1">:</span>
+    <span class="s1">node_name1 = </span><span class="s3">&quot;robot_1_listening_node&quot;</span>
+    <span class="s0"># node_name2 = &quot;robot_2_listening_node&quot;</span>
+    <span class="s1">rospy.init_node(node_name1)</span>
+    <span class="s0"># rospy.init_node(node_name2)</span>
+    <span class="s1">robot_1_topic_name = </span><span class="s3">&quot;/robot_0/odom&quot;</span>
+    <span class="s1">robot_2_topic_name = </span><span class="s3">&quot;/robot_1/odom&quot;</span>
+    <span class="s1">rate = rospy.Rate(</span><span class="s4">0.1</span><span class="s1">)</span>
+    <span class="s2">while not </span><span class="s1">rospy.is_shutdown():</span>
+        <span class="s1">rospy.Subscriber(robot_1_topic_name,Odometry,callback=robot_1_topic_callback2,queue_size=</span><span class="s4">1</span><span class="s1">,buff_size=</span><span class="s4">52428800</span><span class="s1">)</span>
+        <span class="s0"># rospy.Subscriber(robot_2_topic_name,Odometry,callback=robot_2_topic_callback2,queue_size=1,buff_size=52428800)</span>
+        <span class="s1">rate.sleep()</span>
+
+
+</pre>
+</body>
+</html>
