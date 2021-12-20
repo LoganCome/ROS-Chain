@@ -4,6 +4,10 @@ By Shenhui Zhang, Bernie Liu, Ming Tang
 
 Hainan University, RobAI-Lab:robot: **&** HKUST, Hong Kong.
 
+## NOTIFICATION
+
+This branch is **future plan** :star:, if you want to experience the basic functions and characteristics of ROS-Chain, please switch to the **easy_use** branch.
+
 ## :question:What is ROS-Chain​​
 
 ROS-Chain serves as a kind of interaction scheme for ROS and Ethereum in a secure and convenient way. ROS-Chain is built on SM algorithm family which includes SM2, SM3 and SM4, UDP transport protocol, Ethereum and, of course, ROS. As a user, what you need to do to get ROS-Chain works is just to input some key information(Like names of topics, your comma etc.).
@@ -73,7 +77,7 @@ rostopic list
 
 ## :bookmark_tabs:Release Plan
 
-ROS-Chain is still in the process of testing and revisions of codes. In mid-Jan, 2022, we will have official version released.
+ROS-Chain is still in the process of testing and revisions of codes. In mid-Feb, 2022, we will have final version released.
 
 ## :email:Contact Us​
 
