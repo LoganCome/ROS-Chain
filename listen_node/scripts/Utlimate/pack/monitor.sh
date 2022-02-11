@@ -1,0 +1,1 @@
+sudo gnome-terminal -- bash -c "python $CATKIN_WS/src/listen_node/scripts/Utlimate/Monitor.py;exec bash"

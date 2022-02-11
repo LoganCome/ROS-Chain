@@ -1,84 +1,93 @@
-# ROS-Chain
+# ROS-Ethereum
 
-By Shenhui Zhang, Bernie Liu, Ming Tang
+By Shenhui Zhang, Bernie Liu
 
-Hainan University, RobAI-Lab:robot: **&** HKUST, Hong Kong.
+HNU, RobAI-Lab🤖 & HKUST, Hong Kong.
 
 ## NOTIFICATION
 
-This branch is **future plan** :star:, if you want to experience the basic functions and characteristics of ROS-Chain, please switch to the **easy_use** branch.
+**Now ROS-Ethereum only support the messages of 'Odometry' type. ROS-Ethereum will support more types of messages, such as pictures. **
 
-## :question:What is ROS-Chain​​
+## ❓What is ROS-Ethereum
 
-ROS-Chain serves as a kind of interaction scheme for ROS and Ethereum in a secure and convenient way. ROS-Chain is built on SM algorithm family which includes SM2, SM3 and SM4, UDP transport protocol, Ethereum and, of course, ROS. As a user, what you need to do to get ROS-Chain works is just to input some key information(Like names of topics, your comma etc.).
+ROS-Ethereum serves as a kind of interaction scheme for ROS  and Ethereum in a secure and convenient way. ROS-Ethereum is built on SM algorithm family which includes SM2, SM3 and SM4, TCP/IP transport  protocol, Ethereum and, of course, ROS. As a user, what you need to do  to get ROS-Ethereum works is just to input some key information(Like names and types of topics etc.).
 
-ROS-Chain presents a user-friendly framework that blocks the complicated implementation process of detailed interaction scheme along with a **unified Ethereum Blockchain network** reserving for interaction. Our goal is to present a kind of **Information storage and sharing media with security and flexibility** to facilitate the information communication in all ROS systems within the world. Our experiments focus on the security performance, encryption and decryption performance and stability of SM algorithm family.
+ROS-Ethereum presents a user-friendly framework that blocks  the complicated implementation process of detailed interaction scheme along with a **unified Ethereum Blockchain network** reserving for interaction. Our goal is to present a kind of **Critical Information storage and sharing media with security and flexibility** to facilitate the information communication in **all ROS systems** within  the world.
 
-Thanks for the key-exchange scheme based on SM algorithm family, ROS-Chain is equipped with a complete secure encryption mechanism in the cost of a slight loss in performance. Every user has a unique identity and related interactive permissions like authority granting, information check and messages storage in the Ethereum network. Through this, every user having registered in the network can not only do the job of **persistent, tamper proof storage of critical information**, but also can conduct trusted information exchange communication with the authorization of either party of information communication, out of the intervention of third party.
+Thanks for the key-exchange scheme based on SM algorithm  family, ROS-Ethereum is equipped with a complete secure encryption mechanism in the cost of a slight loss in time-consuming performance. Every user has a  unique identity and related interactive permissions like authority  granting, information check and messages storage in the Ethereum  network. Through this, every user having registered in the network can not only do the job of **persistent, tamper proof storage of critical information**, but also can conduct trusted information exchange communication with the other authorized party, out of  the intervention of third party.
 
-## :hammer_and_wrench: How to use
+## 🛠️ How to use
 
-#### Step :one:: Set up ROS and related environments
+#### Step 1️⃣:  Prepare ROS and run envs
 
-ROS-Chain is used for robots build upon `ROS Melodic`, so please set up `ROS Melodic` in `Ubuntu18.04` and put the `listen_node` in the repo to your local catkin workspace. And since `Python 2.7` comes with `Ubuntu 18.04`  without Redis module, you may need to install it manually like this:
+ROS-Ethereum is used for robots build upon `ROS Melodic` and related codes are run in `Anaconda3` envs along with `redis`. To prepare envs, you should prepare two virtual python envs, one in `pthon2.7` and the other in `python3.8`. And for the redis setup, please refer to [this](https://redis.io/download).
 
-```shell
-pip install redis -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+conda activate -n py2 python=2.7
+conda activate -n py3 python=3.8
 ```
 
-While I suggest you open the `listen_node` in your catkin workspace through **Clion**, fixing the python interpreter to `python2.7` in the `/usr/bin` and run the following commands in the terminal of **Clion**:
+Then, you should set up `redis` module in the two virtual envs.
 
-```shell
-apt install python-pip
-pip install redis -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+conda activate py2
+conda install redis redis-py
+conda activate py3
+conda install redis redis-py
 ```
 
-and run `catkin_make` to compile your workspace:
+#### Step 2️⃣:  compile your workspace
 
-```shell
+Cloning the codes and move the folder`listen_node` to your `src` of your workspace and run the following commands:
+
+```
 catkin_make
 ```
 
-Then you need to add the path of your catkin workspace to the `bashrc`  like this:
+And export the path of your workspace to the `~/.bashrc`:
 
-```shell
-vim ~/.bashrc
+```
+sudo vim ~/.bashrc
 :i
-export CATKIN_WS=/home/zsh/catkin_ws
+export CATKIN_WS=/...
 :wq
 source ~/.bashrc
 ```
 
-Next, you shall install and configure Redis in your PC properly. Please refer to the [Redis official](https://redis.io/). Also you need to prepare the environment of `gcc` ,  `g++`  & `python 3.6+` well. If you have no idea about that, this [blog](https://blog.csdn.net/weixin_42108484/article/details/83021957) is a good start and for the python, we suggest you use the [anaconda3](https://www.anaconda.com/).
+#### Step 3️⃣:  Registration
 
-#### Step :two:: Run it!  
+To register the identity, please run the following codes ($catkin_ws is the location of your workspace):
 
-For the first use, you shall run `register.py`  to upload your **SM4 key** which is used to encrypt your ROS messages. And please choose one of the **SM2 public key** in the `SM2_keys.txt` file which is used to encrypt your SM4 key when the program need you to input.
-
-```python
+```
+cd $catkin_ws/src/listen_node/scripts/Ultimate
+conda activate py3
 python register.py
 ```
 
-Run the `console.py` in the `listen_node` in the repo.
+And follow the instructions.
 
-```shell
-python console.py
-```
+#### Step 4️⃣:  Assign the topics and start monitoring
 
-After that, there will be an interaction to define nodes whose information you want to push to  Blockchain.
-
-#### Step :three:: Check the topic
-
-You can run the command below and check the working status of the nodes on your PC.
+Run the following codes to initialize the variables:
 
 ```
-rostopic list
+cd $catkin_ws/src/listen_node/scripts/Utlimate
+conda activate py2
+python console
 ```
 
-## :bookmark_tabs:Release Plan
+When you enter the topics and message types, you can run  the following codes to start monitoring. But, before you start  monitoring, please make sure that **the `redis` module runs normally**.
 
-ROS-Chain is still in the process of testing and revisions of codes. In mid-Feb, 2022, we will have final version released.
+```
+cd $catkin_ws/src/listen_node/scripts/v2/Utlimate
+conda activate py2
+python Monitor.py
+```
 
-## :email:Contact Us​
+## 📑Release Plan
 
-If you have any concerns here, please post as Github issues, or send an e-mail to Shenhui Zhang by freak01716@163.com; o0freak0o01716@gmail.com.
+ROS-Ethereum will support more message types in the future and will be equipment with the decryption module to facilitate the decryption of messages obtained from the Ethereum.
+
+## 📧Contact Us
+
+If you have any concerns here, please post as Github issues, or send an e-mail to Shenhui Zhang by [freak01716@163.com](mailto:freak01716@163.com).

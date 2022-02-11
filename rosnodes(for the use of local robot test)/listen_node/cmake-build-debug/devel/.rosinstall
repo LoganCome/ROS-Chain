@@ -1,2 +1,0 @@
-- setup-file:
-    local-name: /home/zsh/catkin_ws/src/listen_node/cmake-build-debug/devel/setup.sh
