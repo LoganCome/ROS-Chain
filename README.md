@@ -90,4 +90,4 @@ ROS-Ethereum will support more message types in the future and will be equipment
 
 ## 📧Contact Us
 
-If you have any concerns here, please post as Github issues, or send an e-mail to Shenhui Zhang by [freak01716@163.com](mailto:freak01716@163.com).
+If you have any concerns here, please post as Github issues, or send an e-mail to Shenhui Zhang by [freak01716@163.com](mailto:freak01716@163.com) or Boyi Liu by [liuboyilby@gmail.com](mailto:liuboyilby@gmail.com).
