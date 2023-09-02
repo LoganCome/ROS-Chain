@@ -1,6 +1,6 @@
 # ROS-Ethereum
 
-By Shenhui Zhang, Bernie Liu
+By Shenhui Zhang, Boyi Liu
 
 HNU, RobAI-Lab🤖 & HKUST, Hong Kong.
 
